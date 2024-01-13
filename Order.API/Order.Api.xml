@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>Order</name>
+    </assembly>
+    <members>
+        <member name="M:Order.Controllers.ClientController.Get(System.String,System.String)">
+            <summary>
+            Get all clients 
+            </summary>
+            <param name="clientid"></param>
+            <param name="name"></param>
+            <returns></returns>
+        </member>
+        <member name="M:Order.Controllers.ProductController.Get(System.String,System.String)">
+            <summary>
+            Get all products
+            </summary>
+            <param name="productId"></param>
+            <param name="description"></param>
+            <returns></returns>
+        </member>
+    </members>
+</doc>
