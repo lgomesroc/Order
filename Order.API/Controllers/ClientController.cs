@@ -1,8 +1,7 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Order.Interfaces.Applications;
-using Order.Request;
-using Order.Requests;
+using Order.Application.DataContract.Request.Client;
+using Order.Application.Interfaces;
 
 namespace Order.Controllers
 {
@@ -18,73 +17,66 @@ namespace Order.Controllers
             _clientApplication = clientApplication;
         }
 
-        // GET: api/<ClientController>
-        /// <summary>
-        /// Get all clients 
-        /// </summary>
-        /// <param name="clientid"></param>
-        /// <param name="name"></param>
-        /// <returns></returns>
+        /// <summary>Lists clients, optionally filtered by id or name.</summary>
         [HttpGet]
-        public async Task<ActionResult> Get([FromQuery] string clientid, [FromQuery] string name)
+        public async Task<ActionResult> Get([FromQuery] string clientId, [FromQuery] string name)
         {
-            var response = await _clientApplication.ListByFilterAsync(clientid, name);
+            var response = await _clientApplication.ListByFilterAsync(clientId, name);
 
-            if (response.Any()) // Verifica se há itens na lista
-                return UnprocessableEntity(response);
+            if (response.Report.Any())
+                return UnprocessableEntity(response.Report);
 
-            return Ok(response);
+            return Ok(response.Data);
         }
 
-
-        // GET api/<ClientController>/5
+        /// <summary>Gets a client by id.</summary>
         [HttpGet("{id}")]
-        public async Task<ActionResult> Get(string id)
+        public async Task<ActionResult> GetById(string id)
         {
             var response = await _clientApplication.GetByIdAsync(id);
 
             if (response.Report.Any())
                 return UnprocessableEntity(response.Report);
 
-            return Ok(response);
+            return Ok(response.Data);
         }
 
-        // POST api/<ClientController>
+        /// <summary>Creates a client.</summary>
         [HttpPost]
         public async Task<ActionResult> Post([FromBody] CreateClientRequest request)
         {
             var response = await _clientApplication.CreateAsync(request);
 
-            if (response.Any(item => item.Report.Any()))
-                return UnprocessableEntity(response);
+            if (response.Report.Any())
+                return UnprocessableEntity(response.Report);
 
-            return Ok(response);
+            return StatusCode(StatusCodes.Status201Created);
         }
 
-
-        // PUT api/<ClientController>/5
+        /// <summary>Updates a client.</summary>
         [HttpPut("{id}")]
-        public async Task<ActionResult> Put(int id, [FromBody] UpdateClientRequest request)
+        public async Task<ActionResult> Put(string id, [FromBody] UpdateClientRequest request)
         {
-            var updateResult = await _clientApplication.UpdateAsync(request);
+            request.Id = id;
 
-            if (updateResult.Report.Any())
-                return UnprocessableEntity(updateResult.Report);
+            var response = await _clientApplication.UpdateAsync(request);
 
-            return Ok(updateResult);
+            if (response.Report.Any())
+                return UnprocessableEntity(response.Report);
+
+            return NoContent();
         }
 
-
-        // DELETE api/<ClientController>/5
-        [HttpDelete("{id}")]
+        /// <summary>Deletes a client.</summary>
         [HttpDelete("{id}")]
         public async Task<ActionResult> Delete(string id)
         {
-            await _clientApplication.DeleteAsync(id);
+            var response = await _clientApplication.DeleteAsync(id);
 
-            return Ok(); 
+            if (response.Report.Any())
+                return UnprocessableEntity(response.Report);
+
+            return NoContent();
         }
-
-
     }
 }

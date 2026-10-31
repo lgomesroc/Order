@@ -1,117 +1,58 @@
-﻿using Order.Domain.Common;
+using Order.Application.Applications;
+using Order.Application.Interfaces;
+using Order.Application.Interfaces.Security;
+using Order.Application.Mapper;
+using Order.Application.Models;
+using Order.Application.Security;
+using Order.Domain.Common;
 using Order.Domain.Interfaces.Repositories;
 using Order.Domain.Interfaces.Repositories.DataConnector;
 using Order.Domain.Interfaces.Services;
 using Order.Domain.Services;
-using Order.Interfaces;
-using Order.Interfaces.Applications;
-using Order.Request;
-using System.Security.Claims;
-using TimeProvider = Order.Domain.Common.TimeProvider;
+using Order.Infra.DataConnector;
+using Order.Infra.Repositories;
 
 namespace Order.Extensions
 {
     public static class RegisterIoCExtensions
     {
-        public static void RegisterIoC(this IServiceCollection services)
+        public static IServiceCollection RegisterIoC(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddScoped<IUnitOfWork, MyUnitOfWork>();
-            services.AddScoped<ITimeProvider, TimeProvider>();
-            services.AddScoped<IGenerators, Generators>();
+            var connectionString = configuration.GetConnectionString("Default");
 
-            services.AddScoped<IClientApplication, IClientApplication>();
+            if (string.IsNullOrWhiteSpace(connectionString))
+                throw new InvalidOperationException(
+                    "Connection string 'Default' is not configured. " +
+                    "Set it with user-secrets or the ConnectionStrings__Default environment variable.");
+
+            services.AddAutoMapper(typeof(Core));
+            services.Configure<AuthSettings>(configuration.GetSection(AuthSettings.SectionName));
+
+            // One connection (and transaction) per request, shared by every repository.
+            services.AddScoped<IDbConnector>(_ => new SqlConnector(connectionString));
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+            services.AddSingleton<Order.Domain.Common.ITimeProvider, Order.Domain.Common.TimeProvider>();
+            services.AddSingleton<IGenerators, Generators>();
+
+            services.AddScoped<IClientRepository, ClientRepository>();
+            services.AddScoped<IProductRepository, ProductRepository>();
+            services.AddScoped<IOrderRepository, OrderRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
+
             services.AddScoped<IClientService, ClientService>();
-            services.AddScoped<IClientRepository, IClientRepository>();
-
-            services.AddScoped<IOrderApplication, MyOrderApplication>();
-            services.AddScoped<IOrderService, OrderService>();
-            services.AddScoped<IOrderRepository, IOrderRepository>();
-
-            services.AddScoped<IUserApplication, IUserApplication>();
-            services.AddScoped<IUserService, UserService>();
-            services.AddScoped<IUserRepository, IUserRepository>();
-
-            services.AddScoped<IProductApplication, IProductApplication>();
             services.AddScoped<IProductService, ProductService>();
-            services.AddScoped<IProductRepository, IProductRepository>();
-
+            services.AddScoped<IOrderService, OrderService>();
+            services.AddScoped<IUserService, UserService>();
             services.AddScoped<ISecurityService, SecurityService>();
-            services.AddScoped<ITokenManager, ITokenManager>();
+
+            services.AddScoped<IClientApplication, ClientApplication>();
+            services.AddScoped<IProductApplication, ProductApplication>();
+            services.AddScoped<IOrderApplication, OrderApplication>();
+            services.AddScoped<IUserApplication, UserApplication>();
+            services.AddScoped<ITokenManager, TokenManager>();
+
+            return services;
         }
     }
-
-    internal class MyOrderApplication : IOrderApplication
-    {
-        // Implemente a interface IOrderApplication conforme necessário
-        public Task AuthAsync(AuthRequest request)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<IOrderApplication.OrderCreateResponse> CreateAsync(CreateOrderRequest request)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<IOrderApplication.Order> GetByIdAsync(string id)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<List<IOrderApplication.Order>> ListAsync()
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<List<IOrderApplication.Order>> ListByFilterAsync(string orderId, string clientId, string userId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task ListByFilterAsync(ClaimsPrincipal user, object name)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task ListByFilterAsync(ClaimsPrincipal user, string name)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task ListByFilterAsync(ClaimsPrincipal claimsPrincipal)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    internal class MyUnitOfWork : IUnitOfWork
-    {
-        // Implemente a interface IUnitOfWork conforme necessário
-        public IClientRepository ClientRepository => throw new NotImplementedException();
-
-        public IOrderRepository OrderRepository => throw new NotImplementedException();
-
-        public IProductRepository ProductRepository => throw new NotImplementedException();
-
-        public IUserRepository UserRepository => throw new NotImplementedException();
-
-        public IDbConnector dbConnector => throw new NotImplementedException();
-
-        public void BeginTransaction()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void CommitTransaction()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void RollbackTransaction()
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-    // Implemente as outras classes conforme necessário
 }

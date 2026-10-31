@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using Order.Domain.Models;
 
 namespace Order.Domain.Validations
@@ -7,7 +7,8 @@ namespace Order.Domain.Validations
     {
         public ProductValidation()
         {
-            ValidatorOptions.Global.CascadeMode = CascadeMode.Stop;
+            ClassLevelCascadeMode = CascadeMode.Stop;
+            RuleLevelCascadeMode = CascadeMode.Stop;
 
             RuleFor(x => x.Description)
                 .NotNull()
@@ -15,8 +16,10 @@ namespace Order.Domain.Validations
                 .Length(3, 30);
 
             RuleFor(x => x.SellValue)
-                .NotEqual(0)
-                .NotEmpty();
+                .GreaterThan(0).WithMessage("Sell value must be greater than zero.");
+
+            RuleFor(x => x.Stock)
+                .GreaterThanOrEqualTo(0).WithMessage("Stock cannot be negative.");
         }
     }
 }

@@ -1,1 +1,21 @@
+# Build output
+bin/
+obj/
+*.user
+*.suo
 .vs/
+.idea/
+.vscode/
+
+# Test and coverage output
+TestResults/
+coverage/
+
+# Generated documentation
+*.Api.xml
+
+# Local configuration and secrets - never commit these
+.env
+appsettings.Local.json
+appsettings.*.local.json
+secrets.json

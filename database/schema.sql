@@ -1,4 +1,7 @@
-USE [PVC]
+IF DB_ID(N'OrderDb') IS NULL
+    CREATE DATABASE [OrderDb];
+GO
+USE [OrderDb]
 GO
 
 SET ANSI_NULLS ON
@@ -23,7 +26,7 @@ SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE TABLE [dbo].[Order1](
+CREATE TABLE [dbo].[Order](
 	[Id] [varchar](32) NOT NULL,
 	[ClientId] [varchar](32) NOT NULL,
 	[UserId] [varchar](32) NOT NULL,
@@ -43,9 +46,9 @@ CREATE TABLE [dbo].[OrderItem](
 	[Id] [varchar](32) NOT NULL,
 	[OrderId] [varchar](32) NOT NULL,
 	[ProductId] [varchar](32) NOT NULL,
-	[SellValue] [numeric](8, 2) NULL,
+	[SellValue] [numeric](18, 2) NULL,
 	[Quantity] [numeric](18, 0) NULL,
-	[TotalAmount] [numeric](8, 2) NULL,
+	[TotalAmount] [numeric](18, 2) NULL,
 	[CreatedAt] [datetime2](7) NULL,
 PRIMARY KEY CLUSTERED 
 (
@@ -61,40 +64,40 @@ GO
 CREATE TABLE [dbo].[Product](
 	[Id] [varchar](32) NOT NULL,
 	[Description] [varchar](100) NOT NULL,
-	[SellValue] [numeric](8, 2) NOT NULL,
-	[Stock] [varchar](max) NULL,
+	[SellValue] [numeric](18, 2) NOT NULL,
+	[Stock] [int] NOT NULL DEFAULT 0,
 	[CreatedAt] [datetime2](7) NULL,
 PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+) ON [PRIMARY]
 GO
 
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
-CREATE TABLE [dbo].[User1](
+CREATE TABLE [dbo].[User](
 	[Id] [varchar](32) NOT NULL,
 	[Name] [varchar](100) NOT NULL,
 	[Login] [varchar](20) NOT NULL,
-	[PasswordHash] [varchar](max) NULL,
+	[PasswordHash] [varchar](100) NOT NULL,
 	[CreatedAt] [datetime2](7) NULL,
 PRIMARY KEY CLUSTERED 
 (
 	[Id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+) ON [PRIMARY]
 GO
-ALTER TABLE [dbo].[Order1]  WITH CHECK ADD FOREIGN KEY([ClientId])
+ALTER TABLE [dbo].[Order]  WITH CHECK ADD FOREIGN KEY([ClientId])
 REFERENCES [dbo].[Client] ([Id])
 GO
-ALTER TABLE [dbo].[Order1]  WITH CHECK ADD FOREIGN KEY([UserId])
-REFERENCES [dbo].[User1] ([Id])
+ALTER TABLE [dbo].[Order]  WITH CHECK ADD FOREIGN KEY([UserId])
+REFERENCES [dbo].[User] ([Id])
 GO
 ALTER TABLE [dbo].[OrderItem]  WITH CHECK ADD FOREIGN KEY([OrderId])
-REFERENCES [dbo].[Order1] ([Id])
+REFERENCES [dbo].[Order] ([Id])
 GO
 ALTER TABLE [dbo].[OrderItem]  WITH CHECK ADD FOREIGN KEY([ProductId])
 REFERENCES [dbo].[Product] ([Id])

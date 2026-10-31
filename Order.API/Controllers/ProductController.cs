@@ -1,7 +1,7 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Order.Interfaces.Applications;
-using Order.Request;
+using Order.Application.DataContract.Request.Product;
+using Order.Application.Interfaces;
 
 namespace Order.Controllers
 {
@@ -10,58 +10,35 @@ namespace Order.Controllers
     [Authorize]
     public class ProductController : ControllerBase
     {
-        private readonly IProductApplication _ProductApplication;
+        private readonly IProductApplication _productApplication;
 
-        public ProductController(IProductApplication ProductApplication)
+        public ProductController(IProductApplication productApplication)
         {
-            _ProductApplication = ProductApplication;
+            _productApplication = productApplication;
         }
 
-        /// <summary>
-        /// Get all products
-        /// </summary>
-        /// <param name="productId"></param>
-        /// <param name="description"></param>
-        /// <returns></returns>
+        /// <summary>Lists products, optionally filtered by id or description.</summary>
+        [HttpGet]
         public async Task<ActionResult> Get([FromQuery] string productId, [FromQuery] string description)
         {
-            var response = await _ProductApplication.ListByFilterAsync(productId, description);
+            var response = await _productApplication.ListByFilterAsync(productId, description);
 
-            if (response.Any())
-                return UnprocessableEntity(response);
+            if (response.Report.Any())
+                return UnprocessableEntity(response.Report);
 
-            return Ok(response);
+            return Ok(response.Data);
         }
 
-        // GET api/<ProductController>/5
-        [HttpGet("{id}")]
-        public string Get(int id)
-        {
-            return "value";
-        }
-
-        // POST api/<ProductController>
+        /// <summary>Creates a product.</summary>
         [HttpPost]
-        public async Task<ActionResult<CreateProductResponse>> Post([FromBody] CreateProductRequest request)
+        public async Task<ActionResult> Post([FromBody] CreateProductRequest request)
         {
-            var response = await _ProductApplication.CreateAsync(request);
+            var response = await _productApplication.CreateAsync(request);
 
-            if (response != null && !string.IsNullOrEmpty(response.ToString()))
-                return UnprocessableEntity(response.ToString());
+            if (response.Report.Any())
+                return UnprocessableEntity(response.Report);
 
-            return Ok(response);
-        }
-
-        // PUT api/<ProductController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
-        {
-        }
-
-        // DELETE api/<ProductController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
+            return StatusCode(StatusCodes.Status201Created);
         }
     }
 }

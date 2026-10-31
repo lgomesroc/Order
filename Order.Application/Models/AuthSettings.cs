@@ -1,16 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace Order.Application.Models
 {
+    /// <summary>
+    /// JWT settings bound from the "AuthSettings" configuration section.
+    /// The secret must come from user-secrets or environment variables, never from source control.
+    /// </summary>
     public class AuthSettings
     {
-        internal readonly char[] Secret;
+        public const string SectionName = "AuthSettings";
 
-        public string Secrets { get; set; }
-        public int ExpireIn { get; set; }
+        public string Secret { get; set; }
+        public string Issuer { get; set; } = "order-api";
+
+        /// <summary>Token lifetime in hours.</summary>
+        public int ExpireIn { get; set; } = 2;
     }
 }

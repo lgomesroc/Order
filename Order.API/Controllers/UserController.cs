@@ -1,8 +1,7 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Order.Interfaces.Applications;
-using Order.Request;
-using System.Security.Claims;
+using Order.Application.DataContract.Request.User;
+using Order.Application.Interfaces;
 
 namespace Order.Controllers
 {
@@ -11,70 +10,49 @@ namespace Order.Controllers
     [Authorize]
     public class UserController : ControllerBase
     {
-        private readonly IUserApplication _UserApplication;
+        private readonly IUserApplication _userApplication;
 
-        public UserController(IUserApplication UserApplication)
+        public UserController(IUserApplication userApplication)
         {
-            _UserApplication = UserApplication;
+            _userApplication = userApplication;
         }
 
+        /// <summary>Lists users, optionally filtered by id or name.</summary>
         [HttpGet]
-        public async Task<ActionResult<List<Product>>> Get()
+        public async Task<ActionResult> Get([FromQuery] string userId, [FromQuery] string name)
         {
-            var products = await _UserApplication.ListAsync();
-            var result = products;
-
-            return Ok(result);
-        }
-
-        private ActionResult UnprocessableEntity(object report)
-        {
-            throw new NotImplementedException();
-        }
-
-        // GET api/<UserController>/5
-        [HttpGet("{id}")]
-        public string Get(int id)
-        {
-            return "value";
-        }
-
-        // POST api/<UserController>
-        [HttpPost]
-        [AllowAnonymous]
-        public async Task<ActionResult> Post([FromBody] CreateUserRequest request)
-        {
-            var response = await _UserApplication.CreateAsync(request);
+            var response = await _userApplication.ListByFilterAsync(userId, name);
 
             if (response.Report.Any())
                 return UnprocessableEntity(response.Report);
 
-            return Ok(response);
+            return Ok(response.Data);
         }
 
-        // PUT api/<UserController>/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        /// <summary>Registers a new user. Open to anonymous callers.</summary>
+        [HttpPost]
+        [AllowAnonymous]
+        public async Task<ActionResult> Post([FromBody] CreateUserRequest request)
         {
+            var response = await _userApplication.CreateAsync(request);
+
+            if (response.Report.Any())
+                return UnprocessableEntity(response.Report);
+
+            return StatusCode(StatusCodes.Status201Created);
         }
 
-        // DELETE api/<UserController>/5
-        [HttpDelete("{id}")]
-        public void Delete(int id)
-        {
-        }
-
-        // POST api/auth
+        /// <summary>Authenticates a user and returns a JWT.</summary>
         [HttpPost("auth")]
         [AllowAnonymous]
         public async Task<ActionResult> Auth([FromBody] AuthRequest request)
         {
-            var claimsPrincipal = User.Identity as ClaimsPrincipal;
-            var name = claimsPrincipal?.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+            var response = await _userApplication.AuthAsync(request);
 
-            await _UserApplication.ListByFilterAsync(claimsPrincipal, name);
+            if (response.Report.Any())
+                return Unauthorized(response.Report);
 
-            return Ok();
+            return Ok(response.Data);
         }
     }
 }

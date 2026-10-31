@@ -1,6 +1,17 @@
 @Order.HostAddress = http://localhost:5005
 
-GET {{Order.HostAddress}}/weatherforecast/
-Accept: application/json
+### 1. Register a user
+POST {{Order.HostAddress}}/api/user
+Content-Type: application/json
 
-###
+{ "name": "Demo User", "login": "demo", "password": "Demo@1234", "confirmPassword": "Demo@1234" }
+
+### 2. Authenticate (copy the token from the response)
+POST {{Order.HostAddress}}/api/user/auth
+Content-Type: application/json
+
+{ "login": "demo", "password": "Demo@1234" }
+
+### 3. List clients
+GET {{Order.HostAddress}}/api/client
+Authorization: Bearer {{token}}

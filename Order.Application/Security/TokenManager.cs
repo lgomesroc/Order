@@ -1,14 +1,14 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Principal;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Order.Application.DataContract.Response.User;
 using Order.Application.Interfaces.Security;
 using Order.Application.Models;
 using Order.Domain.Models;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Security.Principal;
-using System.Text;
 
 namespace Order.Application.Security
 {
@@ -28,20 +28,19 @@ namespace Order.Application.Security
             var expire = date.AddHours(_authSettings.ExpireIn);
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_authSettings.Secret));
 
-            var securityToken = tokenHandler.CreateToken(new SecurityTokenDescriptor()
+            var securityToken = tokenHandler.CreateToken(new SecurityTokenDescriptor
             {
-                Issuer = "programevc",
+                Issuer = _authSettings.Issuer,
                 IssuedAt = date,
                 NotBefore = date,
                 Expires = expire,
                 SigningCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature),
-                Subject = new ClaimsIdentity(new GenericIdentity(user.Login, JwtBearerDefaults.AuthenticationScheme), new[]
-                {
-                    new Claim(ClaimTypes.NameIdentifier, user.Id)
-                })
+                Subject = new ClaimsIdentity(
+                    new GenericIdentity(user.Login, JwtBearerDefaults.AuthenticationScheme),
+                    new[] { new Claim(ClaimTypes.NameIdentifier, user.Id) })
             });
 
-            var response = new AuthResponse()
+            var response = new AuthResponse
             {
                 Token = tokenHandler.WriteToken(securityToken),
                 ExpireIn = _authSettings.ExpireIn,

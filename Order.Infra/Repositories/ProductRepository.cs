@@ -1,107 +1,100 @@
-﻿using Dapper;
+using Dapper;
 using Order.Domain.Interfaces.Repositories;
 using Order.Domain.Interfaces.Repositories.DataConnector;
 using Order.Domain.Models;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace Order.Infra.Repositories
 {
     public class ProductRepository : IProductRepository
     {
         private readonly IDbConnector _dbConnector;
+
         public ProductRepository(IDbConnector dbConnector)
         {
             _dbConnector = dbConnector;
         }
 
         const string baseSql = @"SELECT [Id]
-                                        ,[Description]
-                                        ,[SellValue]
-                                        ,[Stock]
-                                        ,[CreatedAt]
-                                  FROM[dbo].[Product]
+                                       ,[Description]
+                                       ,[SellValue]
+                                       ,[Stock]
+                                       ,[CreatedAt]
+                                   FROM [dbo].[Product]
                                   WHERE 1 = 1 ";
-        public async Task CreateAsync(ProductModel Product)
+
+        public async Task CreateAsync(ProductModel product)
         {
             string sql = @"INSERT INTO [dbo].[Product]
-                                ([Id]
-                                ,[Description]
-                                ,[SellValue]
-                                ,[Stock]
-                                ,[CreatedAt])
-                          VALUES
-                                (@Id
-                                ,@Description
-                                ,@SellValue
-                                ,@Stock
-                                ,@CreatedAt)";
+                                  ([Id], [Description], [SellValue], [Stock], [CreatedAt])
+                           VALUES (@Id, @Description, @SellValue, @Stock, @CreatedAt)";
 
             await _dbConnector.DbConnection.ExecuteAsync(sql, new
             {
-                Id = Product.Id,
-                Description = Product.Description,
-                SellValue = Product.SellValue,
-                Stock = Product.Stock,
-                CreatedAt = Product.CreatedAt,
+                product.Id,
+                product.Description,
+                product.SellValue,
+                product.Stock,
+                product.CreatedAt
             }, _dbConnector.DbTransaction);
         }
 
-        public async Task DeleteAsync(string ProductId)
+        public async Task DeleteAsync(string productId)
         {
-            string sql = $"DELETE FROM [dbo].[Product] WHERE id = @id";
+            string sql = "DELETE FROM [dbo].[Product] WHERE [Id] = @Id";
 
-            await _dbConnector.DbConnection.ExecuteAsync(sql, new { Id = ProductId }, _dbConnector.DbTransaction);
+            await _dbConnector.DbConnection.ExecuteAsync(sql, new { Id = productId }, _dbConnector.DbTransaction);
         }
 
-        public async Task<bool> ExistsByIdAsync(string ProductId)
+        public async Task<bool> ExistsByIdAsync(string productId)
         {
-            string sql = $"SELECT 1 FROM Product WHERE Id = @Id ";
+            string sql = "SELECT COUNT(1) FROM [dbo].[Product] WHERE [Id] = @Id";
 
-            var Products = await _dbConnector.DbConnection.QueryAsync<bool>(sql, new { Id = ProductId }, _dbConnector.DbTransaction);
+            var count = await _dbConnector.DbConnection.ExecuteScalarAsync<int>(sql, new { Id = productId }, _dbConnector.DbTransaction);
 
-            return Products.FirstOrDefault();
+            return count > 0;
         }
 
-        public async Task<ProductModel> GetByIdAsync(string ProductId)
+        public async Task<ProductModel> GetByIdAsync(string productId)
         {
-            string sql = $"{baseSql} AND Id = @Id";
+            string sql = $"{baseSql} AND [Id] = @Id";
 
-            var Products = await _dbConnector.DbConnection.QueryAsync<ProductModel>(sql, new { Id = ProductId }, _dbConnector.DbTransaction);
+            var products = await _dbConnector.DbConnection.QueryAsync<ProductModel>(sql, new { Id = productId }, _dbConnector.DbTransaction);
 
-            return Products.FirstOrDefault();
+            return products.FirstOrDefault();
         }
 
-        public async Task<List<ProductModel>> ListByFilterAsync(string ProductId = null, string name = null)
+        public async Task<List<ProductModel>> ListByFilterAsync(string productId = null, string description = null)
         {
-            string sql = $"{baseSql} ";
+            string sql = baseSql;
 
-            if (!string.IsNullOrWhiteSpace(ProductId))
-                sql += "AND Id = @Id";
+            if (!string.IsNullOrWhiteSpace(productId))
+                sql += " AND [Id] = @Id";
 
-            if (!string.IsNullOrWhiteSpace(name))
-                sql += "AND Description like @Name";
+            if (!string.IsNullOrWhiteSpace(description))
+                sql += " AND [Description] LIKE @Description";
 
-            var Products = await _dbConnector.DbConnection.QueryAsync<ProductModel>(sql, new { Id = ProductId, Name = "%" + name + "%" }, _dbConnector.DbTransaction);
+            var products = await _dbConnector.DbConnection.QueryAsync<ProductModel>(
+                sql,
+                new { Id = productId, Description = "%" + description + "%" },
+                _dbConnector.DbTransaction);
 
-            return Products.ToList();
+            return products.ToList();
         }
 
-        public async Task UpdateAsync(ProductModel Product)
+        public async Task UpdateAsync(ProductModel product)
         {
             string sql = @"UPDATE [dbo].[Product]
-                               SET [Description] = @Description
-                                  ,[SellValue] = @SellValue
-                                  ,[Stock] = @Stock
-                           WHERE Id = @Id";
+                              SET [Description] = @Description
+                                 ,[SellValue] = @SellValue
+                                 ,[Stock] = @Stock
+                            WHERE [Id] = @Id";
 
             await _dbConnector.DbConnection.ExecuteAsync(sql, new
             {
-                Id = Product.Id,
-                Description = Product.Description,
-                SellValue = Product.SellValue,
-                Stock = Product.Stock
+                product.Id,
+                product.Description,
+                product.SellValue,
+                product.Stock
             }, _dbConnector.DbTransaction);
         }
     }

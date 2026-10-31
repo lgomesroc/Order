@@ -7,7 +7,8 @@ namespace Order.Domain.Validations
     {
         public UserValidation()
         {
-            ValidatorOptions.Global.CascadeMode = CascadeMode.Stop;
+            ClassLevelCascadeMode = CascadeMode.Stop;
+            RuleLevelCascadeMode = CascadeMode.Stop;
 
             RuleFor(x => x.Name)
                 .NotNull()

@@ -1,79 +1,54 @@
-﻿using AutoMapper;
+using AutoMapper;
 using Order.Application.DataContract.Request.Order;
+using Order.Application.DataContract.Response.Order;
 using Order.Application.Interfaces;
 using Order.Domain.Interfaces.Services;
 using Order.Domain.Models;
 using Order.Domain.Validations.Base;
-using OrderResponse = Order.Application.DataContract.Response.Order.OrderResponse;
 
 namespace Order.Application.Applications
 {
     public class OrderApplication : IOrderApplication
     {
-        private readonly IOrderService _OrderService;
+        private readonly IOrderService _orderService;
         private readonly IMapper _mapper;
 
-        public OrderApplication(IOrderService OrderService, IMapper mapper)
+        public OrderApplication(IOrderService orderService, IMapper mapper)
         {
-            _OrderService = OrderService;
+            _orderService = orderService;
             _mapper = mapper;
         }
 
-        public async Task<Response> CreateAsync(CreateOrderRequest Order)
+        public async Task<Response> CreateAsync(CreateOrderRequest order)
         {
-            try
-            {
-                var OrderModel = _mapper.Map<OrderModel>(Order);
+            var orderModel = _mapper.Map<OrderModel>(order);
 
-                return await _OrderService.CreateAsync(OrderModel);
-            }
-            catch (Exception ex)
-            {
-                var response = Report.Create(ex.Message);
+            return await _orderService.CreateAsync(orderModel);
+        }
 
-                return Response.Unprocessable(response);
-            }
+        public async Task<Response> DeleteAsync(string orderId)
+        {
+            return await _orderService.DeleteAsync(orderId);
         }
 
         public async Task<Response<OrderResponse>> GetByIdAsync(string orderId)
         {
-            Response<OrderModel> user = await _OrderService.GetByIdAsync(orderId);
+            Response<OrderModel> order = await _orderService.GetByIdAsync(orderId);
 
-            if (user.Report.Any())
-                return Response.Unprocessable<OrderResponse>(user.Report);
+            if (order.Report.Any())
+                return Response.Unprocessable<OrderResponse>(order.Report);
 
-            var response = _mapper.Map<OrderResponse>(user.Data);
-
-            return Response.OK(response);
+            return Response.OK(_mapper.Map<OrderResponse>(order.Data));
         }
 
         public async Task<Response<List<OrderResponse>>> ListByFilterAsync(string orderId = null, string clientId = null, string userId = null)
         {
-            Response<List<OrderModel>> user = await _OrderService.ListByFiltersAsync(orderId, clientId, userId);
+            Response<List<OrderModel>> orders = await _orderService.ListByFiltersAsync(orderId, clientId, userId);
 
-            if (user.Report.Any())
-                return Response.Unprocessable<List<OrderResponse>>(user.Report);
+            if (orders.Report.Any())
+                return Response.Unprocessable<List<OrderResponse>>(orders.Report);
 
-            var response = _mapper.Map<List<OrderResponse>>(user.Data);
-
-            return Response.OK(response);
+            return Response.OK(_mapper.Map<List<OrderResponse>>(orders.Data));
         }
-
-        Task<Response> IOrderApplication.CreateAsync(CreateOrderRequest Order)
-        {
-            throw new NotImplementedException();
-        }
-
-        Task<Response<Interfaces.OrderResponse>> IOrderApplication.GetByIdAsync(string orderId)
-        {
-            throw new NotImplementedException();
-        }
-
-        Task<Response<List<Interfaces.OrderResponse>>> IOrderApplication.ListByFilterAsync(string orderId, string clientId, string userId)
-        {
-            throw new NotImplementedException();
-        }
-
-        // Métodos duplicados removidos
     }
 }

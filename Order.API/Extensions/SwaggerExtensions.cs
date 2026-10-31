@@ -1,37 +1,51 @@
-﻿using Microsoft.OpenApi.Models;
+using System.Reflection;
+using Microsoft.OpenApi.Models;
 
 namespace Order.Extensions
 {
     public static class SwaggerExtensions
     {
-        public static void SwaggerConfiguration(this IServiceCollection services)
+        public static IServiceCollection SwaggerConfiguration(this IServiceCollection services)
         {
+            services.AddEndpointsApiExplorer();
+
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo
                 {
                     Version = "v1",
-                    Title = "ProgrameVC",
-                    Description = "API order",
-                    TermsOfService = new Uri("https://example.com/terms")
+                    Title = "Order API",
+                    Description = "Sales API: users, clients, products and orders with JWT authentication."
                 });
 
-                c.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme()
+                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
-                    Description = "Bearer token",
-                    In = ParameterLocation.Header,
+                    Description = "JWT Authorization header. Paste only the token: the Bearer prefix is added for you.",
                     Name = "Authorization",
-                    Type = SecuritySchemeType.ApiKey
+                    In = ParameterLocation.Header,
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "bearer",
+                    BearerFormat = "JWT"
                 });
 
-                // Se SecurityRequirementsOperationFilter for uma classe comum, não é necessário registrar como serviço aqui.
-                // c.OperationFilter<SecurityRequirementsOperationFilter>();
+                c.AddSecurityRequirement(new OpenApiSecurityRequirement
+                {
+                    {
+                        new OpenApiSecurityScheme
+                        {
+                            Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
+                        },
+                        Array.Empty<string>()
+                    }
+                });
 
-                var xmlApiPath = Path.Combine(AppContext.BaseDirectory, $"{typeof(IStartup).Assembly.GetName().Name}.xml");
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, $"{Assembly.GetExecutingAssembly().GetName().Name}.xml");
 
-                c.IncludeXmlComments(xmlApiPath);
+                if (File.Exists(xmlPath))
+                    c.IncludeXmlComments(xmlPath);
             });
+
+            return services;
         }
     }
 }
-
