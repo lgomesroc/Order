@@ -59,21 +59,6 @@ namespace Order.Application.Applications
             return Response.OK(response);
         }
 
-        Task<Response> IOrderApplication.CreateAsync(CreateOrderRequest Order)
-        {
-            throw new NotImplementedException();
-        }
-
-        Task<Response<Interfaces.OrderResponse>> IOrderApplication.GetByIdAsync(string orderId)
-        {
-            throw new NotImplementedException();
-        }
-
-        Task<Response<List<Interfaces.OrderResponse>>> IOrderApplication.ListByFilterAsync(string orderId, string clientId, string userId)
-        {
-            throw new NotImplementedException();
-        }
-
         // Métodos duplicados removidos
     }
 }
