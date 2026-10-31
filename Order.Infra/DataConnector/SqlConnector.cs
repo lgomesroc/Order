@@ -1,46 +1,4 @@
-﻿using Order.Domain.Interfaces.Repositories.DataConnector;
+using Order.Domain.Interfaces.Repositories.DataConnector;
 using System.Data;
-
-namespace Order.Infra.DataConnector
-{
-    public class SqlConnector : IDbConnector
-    {
-        public SqlConnector(string connectionString)
-        {
-            SqlClientFactory factory = new SqlClientFactory();
-            dbConnection = factory.CreateConnection();
-            dbConnection.ConnectionString = connectionString;
-        }
-
-
-        public IDbConnection dbConnection { get; }
-
-        public IDbConnection DbConnection => throw new NotImplementedException();
-
-        public IDbTransaction dbTransaction { get; set; }
-        public object SqlClientFactory { get; private set; }
-
-        object IDbConnector.dbConnection => throw new NotImplementedException();
-
-        public IDbTransaction BeginTransaction(IsolationLevel isolation)
-        {
-            if (dbTransaction != null)
-            {
-                return dbTransaction;
-            }
-
-            if (dbConnection.State == ConnectionState.Closed)
-            {
-                dbConnection.Open();
-            }
-
-            return (dbTransaction = dbConnection.BeginTransaction(isolation));
-        }
-
-        public void Dispose()
-        {
-            dbConnection?.Dispose();
-            dbTransaction?.Dispose();
-        }
-    }
-}
+using System.Data.SqlClient;
+namespace Order.Infra.DataConnector { public sealed class SqlConnector : IDbConnector, IDisposable { public SqlConnector(string connectionString) { DbConnection = new SqlConnection(connectionString); } public IDbConnection DbConnection { get; } public IDbTransaction DbTransaction { get; private set; } public IDbTransaction BeginTransaction(IsolationLevel isolation) { if (DbTransaction != null) return DbTransaction; if (DbConnection.State != ConnectionState.Open) DbConnection.Open(); DbTransaction = DbConnection.BeginTransaction(isolation); return DbTransaction; } public void CommitTransaction() { DbTransaction?.Commit(); DbTransaction?.Dispose(); DbTransaction = null; } public void RollbackTransaction() { DbTransaction?.Rollback(); DbTransaction?.Dispose(); DbTransaction = null; } public void Dispose() { DbTransaction?.Dispose(); DbConnection.Dispose(); } } }
