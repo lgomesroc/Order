@@ -20,7 +20,17 @@ jobs:
         run: dotnet restore Order.sln
 
       - name: Build
-        run: dotnet build Order.sln --no-restore -c Release
+        shell: bash
+        run: |
+          if ! dotnet build Order.sln --no-restore -c Release -nologo > build.log 2>&1; then
+            errs=$(grep -E "error [A-Za-z]+[0-9]+" build.log | sed "s#$GITHUB_WORKSPACE/##g" | sort -u | head -40 | sed 's/%/%25/g' | tr -d '\r' | awk '{printf "%s%%0A", $0}')
+            if [ -z "$errs" ]; then
+              errs=$(tail -25 build.log | sed 's/%/%25/g' | tr -d '\r' | awk '{printf "%s%%0A", $0}')
+            fi
+            echo "::error title=Build failed::${errs}"
+            exit 1
+          fi
+          grep -E "warning [A-Za-z]+[0-9]+" build.log | sort -u | head -15 || true
 
       - name: Test
         run: dotnet test Order.sln --no-build -c Release --logger "trx;LogFileName=test-results.trx" --results-directory TestResults
