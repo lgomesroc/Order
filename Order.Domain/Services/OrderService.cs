@@ -137,29 +137,5 @@ namespace Order.Domain.Services
             return response;
         }
 
-        Task<Response> IOrderService.CreateAsync(OrderModel order)
-        {
-            throw new NotImplementedException();
-        }
-
-        Task<Response> IOrderService.DeleteAsync(OrderModel order)
-        {
-            throw new NotImplementedException();
-        }
-
-        Task<Response<OrderModel>> IOrderService.GetByIdAsync(string orderID)
-        {
-            throw new NotImplementedException();
-        }
-
-        Task<Response<List<OrderModel>>> IOrderService.ListByFiltersAsync(string orderId, string clientId, string userId)
-        {
-            throw new NotImplementedException();
-        }
-
-        Task<Response> IOrderService.UpdateAsync(OrderModel order)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

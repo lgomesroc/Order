@@ -7,7 +7,7 @@ namespace Order.Domain.Interfaces.Services
     {
         Task<Response> CreateAsync(OrderModel order);
         Task<Response> UpdateAsync(OrderModel order);
-        Task<Response> DeleteAsync(OrderModel order);
+        Task<Response> DeleteAsync(string orderId);
         Task<Response<OrderModel>> GetByIdAsync(string orderID);
         Task<Response<List<OrderModel>>> ListByFiltersAsync(string orderId = null, string clientId = null, string userId = null);
     }
