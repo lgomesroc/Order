@@ -86,12 +86,6 @@ namespace Order.Domain.Services
                     return response;
                 }
 
-                foreach (var item in order.Items)
-                {
-                    item.Id = _generators.Generate();
-                    item.CreatedAt = _timeProvider.utcDateTime();
-                }
-
                 await _unitOfWork.OrderRepository.UpdateAsync(order);
                 _unitOfWork.CommitTransaction();
                 return response;
