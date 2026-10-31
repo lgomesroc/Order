@@ -7,7 +7,6 @@ namespace Order.Domain.Interfaces.Repositories
         Task CreateAsync(UserModel user);
         Task UpdateAsync(UserModel user);
         Task DeleteAsync(string userId);
-        Task GetAllAsync(UserModel user, string userId);
         Task<UserModel> GetByIdAsync(string userId);
         Task<UserModel> GetByLoginAsync(string login);
         Task<List<UserModel>> ListByFilterAsync(string userId = null, string name = null);

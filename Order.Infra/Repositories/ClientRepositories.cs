@@ -22,6 +22,8 @@ namespace Order.Infra.Repositories
             const string sql = @"UPDATE [dbo].[Client] SET [Name] = @Name, [Email] = @Email, [PhoneNumber] = @PhoneNumber, [Address] = @Address WHERE [Id] = @Id";
             await _dbConnector.DbConnection.ExecuteAsync(sql, client, _dbConnector.DbTransaction);
         }
+        public Task DeleteAsync(ClientModel client) => DeleteAsync(client.Id);
+
         public async Task DeleteAsync(string clientId)
         {
             const string sql = "DELETE FROM [dbo].[Client] WHERE [Id] = @Id";
