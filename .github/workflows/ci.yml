@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main, developer, "feature/**", "test/**", "chore/**", "docs/**"]
+  pull_request:
+    branches: [main, developer]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Restore
+        run: dotnet restore Order.sln
+
+      - name: Build
+        run: dotnet build Order.sln --no-restore -c Release
+
+      - name: Test
+        run: dotnet test Order.sln --no-build -c Release --logger "trx;LogFileName=test-results.trx" --results-directory TestResults
+        continue-on-error: false
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: TestResults/
+          if-no-files-found: ignore
