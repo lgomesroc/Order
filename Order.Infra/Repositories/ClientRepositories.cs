@@ -1,48 +1,154 @@
-using Dapper;
+﻿using Dapper;
 using Order.Domain.Interfaces.Repositories;
-using Order.Domain.Interfaces.Repositories.DataConnector;
 using Order.Domain.Models;
+using System.Data;
+using SqlConnection = System.Data.SqlClient.SqlConnection;
+
 
 namespace Order.Infra.Repositories
 {
+    // Ajuste a interface IDbConnector para incluir a propriedade dbConnection
+    public interface IDbConnector : IDisposable
+    {
+        IDbConnection DbConnection { get; }
+        IDbTransaction DbTransaction { get; set; }
+
+        void BeginTransaction(IsolationLevel readUncommitted);
+    }
+
+    // Ajuste a classe SqlConnector para implementar a interface de maneira adequada
+    public class SqlConnector : IDbConnector
+    {
+        public SqlConnector(string connectionString)
+        {
+            DbConnection = new SqlConnection(connectionString);
+        }
+
+        public IDbConnection DbConnection { get; }
+
+        public IDbTransaction DbTransaction { get; set; }
+
+        IDbConnection IDbConnector.DbConnection => DbConnection;
+
+        public void BeginTransaction(IsolationLevel readUncommitted)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Dispose()
+        {
+            throw new NotImplementedException();
+        }
+
+        // Restante da implementação...
+    }
+
+    // Ajuste a classe ClientRepository para utilizar a propriedade DbConnection
     public class ClientRepository : IClientRepository
     {
         private readonly IDbConnector _dbConnector;
-        public ClientRepository(IDbConnector dbConnector) => _dbConnector = dbConnector ?? throw new ArgumentNullException(nameof(dbConnector));
 
-        private const string BaseSql = @"SELECT [Id], [Name], [Email], [PhoneNumber], [Address], [CreatedAt] FROM [dbo].[Client] WHERE 1 = 1 ";
+        public ClientRepository(IDbConnector dbConnector)
+        {
+            _dbConnector = dbConnector ?? throw new ArgumentNullException(nameof(dbConnector));
+        }
+
+        const string baseSql = @"SELECT [Id]
+                                      ,[Name]
+                                      ,[Email]
+                                      ,[PhoneNumber]
+                                      ,[Address]
+                                      ,[CreatedAt]
+                                  FROM [dbo].[Client]
+                                  WHERE 1 = 1 ";
 
         public async Task CreateAsync(ClientModel client)
         {
-            const string sql = @"INSERT INTO [dbo].[Client] ([Id], [Name], [Email], [PhoneNumber], [Address], [CreatedAt]) VALUES (@Id, @Name, @Email, @PhoneNumber, @Address, @CreatedAt)";
-            await _dbConnector.DbConnection.ExecuteAsync(sql, client, _dbConnector.DbTransaction);
+            string sql = @"INSERT INTO [dbo].[Client]
+                                   ([Id]
+                                   ,[Name]
+                                   ,[Email]
+                                   ,[PhoneNumber]
+                                   ,[Address]
+                                   ,[CreatedAt])
+                             VALUES
+                                   (@Id
+                                   ,@Name
+                                   ,@Email
+                                   ,@PhoneNumber
+                                   ,@Address
+                                   ,@CreatedAt)";
+
+            await _dbConnector.DbConnection.ExecuteAsync(sql, new
+            {
+                Id = client.Id,
+                Name = client.Name,
+                Email = client.Email,
+                PhoneNumber = client.PhoneNumber,
+                Address = client.Address,
+                CreatedAt = client.CreatedAt
+            }, _dbConnector.DbTransaction);
         }
+
         public async Task UpdateAsync(ClientModel client)
         {
-            const string sql = @"UPDATE [dbo].[Client] SET [Name] = @Name, [Email] = @Email, [PhoneNumber] = @PhoneNumber, [Address] = @Address WHERE [Id] = @Id";
-            await _dbConnector.DbConnection.ExecuteAsync(sql, client, _dbConnector.DbTransaction);
+            string sql = @"UPDATE [dbo].[Client]
+                               SET [Name] = @Name
+                                  ,[Email] = @Email
+                                  ,[PhoneNumber] = @PhoneNumber
+                                  ,[Address] = @Address
+                             WHERE Id = @Id";
+
+            await _dbConnector.DbConnection.ExecuteAsync(sql, new
+            {
+                Id = client.Id,
+                Name = client.Name,
+                Email = client.Email,
+                PhoneNumber = client.PhoneNumber,
+                Address = client.Address,
+            }, _dbConnector.DbTransaction);
         }
+
         public async Task DeleteAsync(string clientId)
         {
-            const string sql = "DELETE FROM [dbo].[Client] WHERE [Id] = @Id";
+            string sql = $"DELETE FROM [dbo].[Client] WHERE Id = @Id";
+
             await _dbConnector.DbConnection.ExecuteAsync(sql, new { Id = clientId }, _dbConnector.DbTransaction);
         }
+
         public async Task<bool> ExistsByIdAsync(string clientId)
         {
-            const string sql = "SELECT CASE WHEN EXISTS (SELECT 1 FROM [dbo].[Client] WHERE [Id] = @Id) THEN 1 ELSE 0 END";
-            return await _dbConnector.DbConnection.ExecuteScalarAsync<bool>(sql, new { Id = clientId }, _dbConnector.DbTransaction);
+            string sql = $"SELECT 1 FROM Client WHERE Id = @Id ";
+
+            var clients = await _dbConnector.DbConnection.QueryAsync<bool>(sql, new { Id = clientId }, _dbConnector.DbTransaction);
+
+            return clients.FirstOrDefault();
         }
+
         public async Task<ClientModel> GetByIdAsync(string clientId)
         {
-            return await _dbConnector.DbConnection.QueryFirstOrDefaultAsync<ClientModel>(BaseSql + " AND [Id] = @Id", new { Id = clientId }, _dbConnector.DbTransaction);
+            string sql = $"{baseSql} AND Id = @Id";
+
+            var clients = await _dbConnector.DbConnection.QueryAsync<ClientModel>(sql, new { Id = clientId }, _dbConnector.DbTransaction);
+
+            return clients.FirstOrDefault();
         }
+
         public async Task<List<ClientModel>> ListByFilterAsync(string clientId = null, string name = null)
         {
-            var sql = BaseSql;
-            if (!string.IsNullOrWhiteSpace(clientId)) sql += " AND [Id] = @Id";
-            if (!string.IsNullOrWhiteSpace(name)) sql += " AND [Name] LIKE @Name";
-            var rows = await _dbConnector.DbConnection.QueryAsync<ClientModel>(sql, new { Id = clientId, Name = $"%{name}%" }, _dbConnector.DbTransaction);
-            return rows.ToList();
+            string sql = $"{baseSql} ";
+
+            if (!string.IsNullOrWhiteSpace(clientId))
+                sql += "AND Id = @Id";
+
+            if (!string.IsNullOrWhiteSpace(name))
+                sql += "AND Name like @Name";
+
+            var clients = await _dbConnector.DbConnection.QueryAsync<ClientModel>(sql, new { Id = clientId, Name = "%" + name + "%" }, _dbConnector.DbTransaction);
+
+            return clients?.ToList() ?? new List<ClientModel>();
         }
+
+        public Task DeleteAsync(ClientModel client) => DeleteAsync(client.Id);
     }
 }
