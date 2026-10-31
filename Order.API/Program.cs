@@ -14,6 +14,7 @@ using Order.Domain.Services;
 using Order.Extensions;
 using Order.Infra.DataConnector;
 using Order.Infra.Repositories;
+using TimeProvider = Order.Domain.Common.TimeProvider;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
