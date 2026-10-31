@@ -1,90 +1,57 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Order.Interfaces.Applications;
-using Order.Request;
-using Order.Requests;
+using Order.Application.DataContract.Request.Client;
+using Order.Application.Interfaces;
 
 namespace Order.Controllers
 {
-    [Route("api/client")]
+    [Route("api/clients")]
     [ApiController]
     [Authorize]
     public class ClientController : ControllerBase
     {
-        private readonly IClientApplication _clientApplication;
+        private readonly IClientApplication _application;
+        public ClientController(IClientApplication application) => _application = application;
 
-        public ClientController(IClientApplication clientApplication)
-        {
-            _clientApplication = clientApplication;
-        }
-
-        // GET: api/<ClientController>
-        /// <summary>
-        /// Get all clients 
-        /// </summary>
-        /// <param name="clientid"></param>
-        /// <param name="name"></param>
-        /// <returns></returns>
         [HttpGet]
-        public async Task<ActionResult> Get([FromQuery] string clientid, [FromQuery] string name)
+        public async Task<IActionResult> Get([FromQuery] string clientId, [FromQuery] string name)
         {
-            var response = await _clientApplication.ListByFilterAsync(clientid, name);
-
-            if (response.Any()) // Verifica se há itens na lista
-                return UnprocessableEntity(response);
-
-            return Ok(response);
+            var response = await _application.ListByFilterAsync(clientId, name);
+            if (response.Report.Any()) return UnprocessableEntity(response.Report);
+            return Ok(response.Data);
         }
 
-
-        // GET api/<ClientController>/5
         [HttpGet("{id}")]
-        public async Task<ActionResult> Get(string id)
+        public async Task<IActionResult> GetById(string id)
         {
-            var response = await _clientApplication.GetByIdAsync(id);
-
-            if (response.Report.Any())
-                return UnprocessableEntity(response.Report);
-
-            return Ok(response);
+            var response = await _application.GetByIdAsync(id);
+            if (response.Report.Any()) return NotFound(response.Report);
+            return Ok(response.Data);
         }
 
-        // POST api/<ClientController>
         [HttpPost]
-        public async Task<ActionResult> Post([FromBody] CreateClientRequest request)
+        public async Task<IActionResult> Post([FromBody] CreateClientRequest request)
         {
-            var response = await _clientApplication.CreateAsync(request);
-
-            if (response.Any(item => item.Report.Any()))
-                return UnprocessableEntity(response);
-
-            return Ok(response);
+            var response = await _application.CreateAsync(request);
+            if (response.Report.Any()) return UnprocessableEntity(response.Report);
+            return CreatedAtAction(nameof(GetById), new { id = "" }, null);
         }
 
-
-        // PUT api/<ClientController>/5
         [HttpPut("{id}")]
-        public async Task<ActionResult> Put(int id, [FromBody] UpdateClientRequest request)
+        public async Task<IActionResult> Put(string id, [FromBody] UpdateClientRequest request)
         {
-            var updateResult = await _clientApplication.UpdateAsync(request);
-
-            if (updateResult.Report.Any())
-                return UnprocessableEntity(updateResult.Report);
-
-            return Ok(updateResult);
+            request.Id = id;
+            var response = await _application.UpdateAsync(request);
+            if (response.Report.Any()) return UnprocessableEntity(response.Report);
+            return NoContent();
         }
 
-
-        // DELETE api/<ClientController>/5
         [HttpDelete("{id}")]
-        [HttpDelete("{id}")]
-        public async Task<ActionResult> Delete(string id)
+        public async Task<IActionResult> Delete(string id)
         {
-            await _clientApplication.DeleteAsync(id);
-
-            return Ok(); 
+            var response = await _application.DeleteAsync(id);
+            if (response.Report.Any()) return UnprocessableEntity(response.Report);
+            return NoContent();
         }
-
-
     }
 }
