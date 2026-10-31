@@ -1,66 +1,96 @@
-# Order API
+# Order
 
-![Venha conhecer o projeto Order.](cl3oal8w6000c79570tgf4k1k.jpg)
+Sistema de gerenciamento de clientes, produtos e pedidos, com API REST em ASP.NET Core, SQL Server e interface web planejada com Razor Pages.
 
-Este projeto é uma API avançada desenvolvida utilizando diversas ferramentas e boas práticas de programação. Ele envolve conceitos como injeção de dependência, generics, JWT, UnitOfWork, Docker, AutoMapper, Dapper, REST, Swagger, Bryct, entre outros.
+## Tecnologias
 
+- .NET 10 / ASP.NET Core
+- C#
+- SQL Server
+- Dapper
+- AutoMapper
+- JWT Bearer
+- Swagger / OpenAPI
+- Razor Pages
+- Docker
 
-## Funcionalidades Principais
+## Estrutura
 
-O objetivo principal do projeto é lidar com a venda de produtos, incluindo o cadastro de clientes. O banco de dados foi estruturado no SQL Server Management Studio com as seguintes tabelas:
+- `Order.API`: API REST e composição da aplicação.
+- `Order.Application`: casos de uso, contratos de entrada/saída e mapeamentos.
+- `Order.Domain`: entidades, regras de negócio, validações e interfaces.
+- `Order.Infra`: persistência SQL Server e repositórios.
+- `Order`: aplicação web Razor Pages.
 
-- Usuário: Para autenticação e acesso à API.
-- Produto: Informações sobre os produtos disponíveis.
-- Cliente: Cadastro de clientes.
-- Pedido: Informações sobre os pedidos realizados.
-- PedidoItem: Detalhes dos itens em cada pedido.
+## Configuração local
 
-### Segurança
+### 1. Pré-requisitos
 
-As senhas são criptografadas e não são armazenadas no banco de dados por questões de segurança.
+- .NET SDK 10
+- Docker Desktop ou Docker Engine com Docker Compose
+- SQL Server em execução (o Compose abaixo fornece um ambiente local)
 
+### 2. Preparar o SQL Server
 
-## Estrutura do Projeto
+Copie o arquivo de exemplo e defina uma senha local forte:
 
-O projeto está dividido em quatro partes interligadas:
+```bash
+cp .env.example .env
+```
 
-- **Order.API:** Inicialização da aplicação e ponto de entrada da API.
-- **Order.Domain:** Camada de domínio.
-- **Order.Application:** Camada de aplicação, responsável por fornecer e receber dados da API.
-- **Order.Infra:** Camada de infraestrutura, cuida do acesso ao banco de dados e interações externas.
+Edite `.env` e defina `MSSQL_SA_PASSWORD`. Não versione o arquivo `.env`.
 
-### Nomenclatura
+Suba o banco:
 
-Todos os componentes, incluindo nomes de classes, projetos, tabelas e propriedades, foram nomeados em inglês, seguindo as melhores práticas de programação.
+```bash
+docker compose up -d sqlserver
+```
 
+Aplique o esquema inicial:
 
-## Feedback
+```bash
+set -a
+source .env
+set +a
+docker exec -it order-sqlserver /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -i /scripts/schema.sql
+```
 
-Sinta-se à vontade para explorar e dar feedback através de elogios, sugestões e críticas.
+O script cria o banco `OrderDb` e as tabelas de clientes, usuários, produtos, pedidos e itens de pedido.
 
+### 3. Configurar os segredos da API
 
-## Como Contribuir
+Os valores sensíveis são mantidos no .NET User Secrets durante o desenvolvimento, não no repositório:
 
-Se você deseja contribuir para o desenvolvimento deste projeto, siga as etapas abaixo:
+```bash
+set -a
+source .env
+set +a
 
-### Relatando Problemas
+dotnet user-secrets set "ConnectionStrings:default" "Server=localhost,1433;Database=OrderDb;User Id=sa;Password=$MSSQL_SA_PASSWORD;TrustServerCertificate=True;Encrypt=False" --project Order.API/Order.csproj
 
-Se encontrar algum problema ou tiver sugestões de melhorias, por favor, abra uma "Issue". Antes de criar uma nova "Issue", verifique se o problema já não foi relatado por outra pessoa.
+dotnet user-secrets set "AuthSettings:Secret" "Order-Development-Only-Signing-Key-2026-Do-Not-Reuse" --project Order.API/Order.csproj
+```
 
-### Contribuindo com Código
+Em ambientes publicados, configure `ConnectionStrings__default` e `AuthSettings__Secret` como variáveis de ambiente/segredos do provedor.
 
-Se você deseja contribuir com código, siga estas etapas:
+### 4. Restaurar, compilar e executar
 
-1. Fork do repositório.
-2. Crie uma nova branch para suas alterações: `git checkout -b nome-da-sua-branch`.
-3. Faça as alterações desejadas e faça commit: `git commit -m "Descrição das alterações"`.
-4. Faça push para a sua branch: `git push origin nome-da-sua-branch`.
-5. Abra um Pull Request (PR) com uma descrição clara das alterações propostas.
+```bash
+dotnet restore Order.sln
+dotnet build Order.sln --no-restore
+dotnet run --project Order.API/Order.csproj
+```
 
-Agradeço antecipadamente por suas contribuições!
+Swagger: [http://localhost:5005/swagger](http://localhost:5005/swagger).
 
-## Estrelas
+## Banco de dados
 
-Peço encarecidamente, se puder, dar estrela para que o projeto fique em destaque e mostre as outras pessoas.
+O esquema inicial está em [scrip order.sql](scrip%20order.sql). Ele foi alinhado aos nomes de tabelas e tipos usados pelos repositórios. O banco local padrão é `OrderDb`.
 
-  
+## Segurança
+
+As senhas dos usuários são armazenadas como hashes BCrypt. A chave JWT e a connection string não devem ser commitadas; use User Secrets localmente e o gerenciador de segredos do ambiente publicado.
+
+## Estado do projeto
+
+O projeto está em processo de recuperação e finalização da V1. As PRs de estabilização são mantidas abertas como rascunho até a compilação, os testes automatizados e a execução com SQL Server serem validados.
