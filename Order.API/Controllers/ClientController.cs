@@ -5,7 +5,7 @@ using Order.Application.Interfaces;
 
 namespace Order.Controllers
 {
-    [Route("api/clients")]
+    [Route("api/client")]
     [ApiController]
     [Authorize]
     public class ClientController : ControllerBase
@@ -34,7 +34,7 @@ namespace Order.Controllers
         {
             var response = await _application.CreateAsync(request);
             if (response.Report.Any()) return UnprocessableEntity(response.Report);
-            return CreatedAtAction(nameof(GetById), new { id = "" }, null);
+            return StatusCode(StatusCodes.Status201Created);
         }
 
         [HttpPut("{id}")]

@@ -5,7 +5,7 @@ using Order.Application.Interfaces;
 
 namespace Order.Controllers
 {
-    [Route("api/orders")]
+    [Route("api/order")]
     [ApiController]
     [Authorize]
     public class OrderController : ControllerBase
