@@ -176,6 +176,17 @@ public class SqlServerRepositoryTests
             var finalProduct = await new ProductRepository(verificationConnector).GetByIdAsync(productId);
             Assert.NotNull(finalProduct);
             Assert.Equal(1, finalProduct.Stock);
+
+            using var restoreConnectorOne = new SqlConnector(databaseConnection);
+            using var restoreConnectorTwo = new SqlConnector(databaseConnection);
+            await Task.WhenAll(
+                new ProductRepository(restoreConnectorOne).IncreaseStockAsync(productId, 2),
+                new ProductRepository(restoreConnectorTwo).IncreaseStockAsync(productId, 2));
+
+            using var restoredVerificationConnector = new SqlConnector(databaseConnection);
+            var restoredProduct = await new ProductRepository(restoredVerificationConnector).GetByIdAsync(productId);
+            Assert.NotNull(restoredProduct);
+            Assert.Equal(5, restoredProduct.Stock);
         }
         finally
         {
