@@ -1,0 +1,40 @@
+@page
+@model Order.Pages.ProductsModel
+@{
+    ViewData["Title"] = "Produtos";
+}
+<h1>Produtos</h1>
+@if (TempData["Success"] is string success) { <div class="alert alert-success">@success</div> }
+@if (TempData["Error"] is string error) { <div class="alert alert-danger">@error</div> }
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage)) { <div class="alert alert-danger">@Model.ErrorMessage</div> }
+<section class="card card-body mb-4">
+    <h2 class="h5">Cadastrar produto</h2>
+    <form method="post" asp-page-handler="Create" class="row g-2">
+        <div class="col-md-5"><input asp-for="Form.Description" class="form-control" placeholder="Descrição" required minlength="3" maxlength="30" /></div>
+        <div class="col-md-3"><input asp-for="Form.SellValue" type="number" min="0.01" step="0.01" class="form-control" placeholder="Preço" required /></div>
+        <div class="col-md-2"><input asp-for="Form.Stock" type="number" min="0" class="form-control" placeholder="Estoque" required /></div>
+        <div class="col-md-2"><button class="btn btn-primary w-100">Cadastrar</button></div>
+    </form>
+</section>
+<table class="table table-striped">
+    <thead><tr><th>Descrição</th><th>Preço</th><th>Estoque</th><th>Ações</th></tr></thead>
+    <tbody>
+    @foreach (var item in Model.Products)
+    {
+        <tr>
+            <td colspan="4">
+                <form method="post" class="row g-2 align-items-center">
+                    <input type="hidden" name="Form.Id" value="@item.Id" />
+                    <div class="col-md-4"><input name="Form.Description" value="@item.Description" class="form-control" required minlength="3" maxlength="30" /></div>
+                    <div class="col-md-3"><input name="Form.SellValue" value="@item.SellValue" type="number" min="0.01" step="0.01" class="form-control" required /></div>
+                    <div class="col-md-2"><input name="Form.Stock" value="@item.Stock" type="number" min="0" class="form-control" required /></div>
+                    <div class="col-md-3 d-flex gap-2">
+                        <button asp-page-handler="Update" class="btn btn-outline-primary btn-sm">Salvar</button>
+                        <button asp-page-handler="Delete" asp-route-id="@item.Id" class="btn btn-outline-danger btn-sm" formnovalidate>Excluir</button>
+                    </div>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
