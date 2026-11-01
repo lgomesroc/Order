@@ -57,9 +57,17 @@ public sealed class OrderApiClient(HttpClient httpClient)
     private static async Task EnsureSuccess(HttpResponseMessage response)
     {
         if (response.IsSuccessStatusCode) return;
+        if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            throw new ApiUnauthorizedException();
+
         var body = await response.Content.ReadAsStringAsync();
         throw new HttpRequestException($"API returned {(int)response.StatusCode} ({response.ReasonPhrase}): {body}");
     }
+}
+
+public sealed class ApiUnauthorizedException : Exception
+{
+    public ApiUnauthorizedException() : base("The API session has expired.") { }
 }
 
 public sealed class ApiEnvelope<T>
