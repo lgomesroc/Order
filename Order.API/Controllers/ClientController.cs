@@ -25,8 +25,10 @@ namespace Order.Controllers
         public async Task<IActionResult> GetById(string id)
         {
             var response = await _application.GetByIdAsync(id);
-            if (response.Report.Any()) return NotFound(response.Report);
-            return Ok(response.Data);
+            if (!response.Report.Any()) return Ok(response.Data);
+            return response.Report.Any(report => report.Code == "NOT_FOUND")
+                ? NotFound(response.Report)
+                : UnprocessableEntity(response.Report);
         }
 
         [HttpPost]
@@ -42,8 +44,10 @@ namespace Order.Controllers
         {
             request.Id = id;
             var response = await _application.UpdateAsync(request);
-            if (response.Report.Any()) return UnprocessableEntity(response.Report);
-            return NoContent();
+            if (!response.Report.Any()) return NoContent();
+            return response.Report.Any(report => report.Code == "NOT_FOUND")
+                ? NotFound(response.Report)
+                : UnprocessableEntity(response.Report);
         }
 
         [HttpDelete("{id}")]
