@@ -1,5 +1,7 @@
 using System.Data.SqlClient;
+using Order.Domain.Common;
 using Order.Domain.Models;
+using Order.Domain.Services;
 using Order.Infra.DataConnector;
 using Order.Infra.Repositories;
 
@@ -9,7 +11,7 @@ namespace Order.IntegrationTests;
 public class SqlServerRepositoryTests
 {
     [Fact]
-    public async Task ClientAndProductRepositories_PersistChangesInSqlServer()
+    public async Task OrderService_PersistsOrderAndRestoresStockOnDelete()
     {
         var connectionString = Environment.GetEnvironmentVariable("ORDER_TEST_CONNECTION");
         Assert.False(string.IsNullOrWhiteSpace(connectionString), "ORDER_TEST_CONNECTION must point to the SQL Server test database.");
@@ -20,9 +22,16 @@ public class SqlServerRepositoryTests
         using var connector = new SqlConnector(databaseConnection);
         var clients = new ClientRepository(connector);
         var products = new ProductRepository(connector);
+        var users = new UserRepository(connector);
+        var orders = new OrderRepository(connector);
+        var unitOfWork = new UnitOfWork(connector);
+        var orderService = new OrderService(new TimeProvider(), new Generators(), unitOfWork);
+
         var suffix = Guid.NewGuid().ToString("N");
         var clientId = suffix;
         var productId = suffix;
+        var userId = suffix;
+        string? createdOrderId = null;
 
         try
         {
@@ -37,36 +46,64 @@ public class SqlServerRepositoryTests
             };
             await clients.CreateAsync(client);
 
-            var loadedClient = await clients.GetByIdAsync(clientId);
-            Assert.NotNull(loadedClient);
-            Assert.Equal(client.Name, loadedClient!.Name);
-
-            client.Name = "Updated Integration Client";
-            await clients.UpdateAsync(client);
-            Assert.Equal(client.Name, (await clients.GetByIdAsync(clientId))!.Name);
+            var user = new UserModel
+            {
+                Id = userId,
+                Name = "Integration User",
+                Login = $"it-{suffix}",
+                PasswordHash = "test-password-hash",
+                CreatedAt = DateTime.UtcNow
+            };
+            await users.CreateAsync(user);
 
             var product = new ProductModel
             {
                 Id = productId,
                 Description = "Integration Product",
                 SellValue = 25.50m,
-                Stock = 8,
+                Stock = 5,
                 CreatedAt = DateTime.UtcNow
             };
             await products.CreateAsync(product);
 
-            var loadedProduct = await products.GetByIdAsync(productId);
-            Assert.NotNull(loadedProduct);
-            Assert.Equal(25.50m, loadedProduct!.SellValue);
-            Assert.Equal(8, loadedProduct.Stock);
+            var createResult = await orderService.CreateAsync(new OrderModel
+            {
+                Client = new ClientModel { Id = clientId },
+                User = new UserModel { Id = userId },
+                Items = new List<OrderItemModel>
+                {
+                    new() { Product = new ProductModel { Id = productId }, Quantity = 2 }
+                }
+            });
 
-            product.Stock = 5;
-            await products.UpdateAsync(product);
+            Assert.Empty(createResult.Report);
+
+            var createdOrders = await orderService.ListByFiltersAsync(null, clientId, userId);
+            Assert.Empty(createdOrders.Report);
+            var createdOrder = Assert.Single(createdOrders.Data);
+            createdOrderId = createdOrder.Id;
+
+            var details = await orderService.GetByIdAsync(createdOrderId);
+            Assert.Empty(details.Report);
+            var item = Assert.Single(details.Data!.Items);
+            Assert.Equal(productId, item.Product.Id);
+            Assert.Equal(2, item.Quantity);
+            Assert.Equal(51.00m, item.TotalAmount);
+
+            Assert.Equal(3, (await products.GetByIdAsync(productId))!.Stock);
+
+            var deleteResult = await orderService.DeleteAsync(createdOrderId);
+            Assert.Empty(deleteResult.Report);
+            createdOrderId = null;
+
             Assert.Equal(5, (await products.GetByIdAsync(productId))!.Stock);
         }
         finally
         {
+            if (!string.IsNullOrWhiteSpace(createdOrderId))
+                await orders.DeleteAsync(createdOrderId);
             await products.DeleteAsync(productId);
+            await users.DeleteAsync(userId);
             await clients.DeleteAsync(clientId);
         }
     }
