@@ -97,6 +97,21 @@ public class SqlServerRepositoryTests
             createdOrderId = null;
 
             Assert.Equal(5, (await products.GetByIdAsync(productId))!.Stock);
+
+            var rejectedOrder = await orderService.CreateAsync(new OrderModel
+            {
+                Client = new ClientModel { Id = clientId },
+                User = new UserModel { Id = userId },
+                Items = new List<OrderItemModel>
+                {
+                    new() { Product = new ProductModel { Id = productId }, Quantity = 6 }
+                }
+            });
+
+            Assert.NotEmpty(rejectedOrder.Report);
+            Assert.Equal(5, (await products.GetByIdAsync(productId))!.Stock);
+            var ordersAfterRejection = await orderService.ListByFiltersAsync(null, clientId, userId);
+            Assert.Empty(ordersAfterRejection.Data);
         }
         finally
         {
