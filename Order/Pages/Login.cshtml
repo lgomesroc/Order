@@ -4,6 +4,7 @@
     ViewData["Title"] = "Entrar";
 }
 <h1>Entrar no Order</h1>
+@if (TempData["Error"] is string error) { <div class="alert alert-danger">@error</div> }
 @if (!string.IsNullOrWhiteSpace(Model.ErrorMessage)) { <div class="alert alert-danger">@Model.ErrorMessage</div> }
 <p><a asp-page="/Register">Ainda não tem conta? Cadastre-se.</a></p>
 <form method="post" class="col-md-5">
