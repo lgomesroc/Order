@@ -20,7 +20,7 @@ for attempt in $(seq 1 60); do
 done
 
 echo "Applying database schema..."
-"${SQLCMD}" -S "${MSSQL_HOST:-sqlserver},1433" -U sa -P "${MSSQL_SA_PASSWORD}" -C -b -i /scripts/schema.sql
+"${SQLCMD}" -S "${MSSQL_HOST:-sqlserver},1433" -U sa -P "${MSSQL_SA_PASSWORD}" -C -b -i /schema/schema.sql
 
 if compgen -G "/scripts/seeds/*.sql" > /dev/null; then
     for seed_file in /scripts/seeds/*.sql; do
