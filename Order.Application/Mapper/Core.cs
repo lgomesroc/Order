@@ -46,6 +46,10 @@ namespace Order.Application.Mapper
 
 
             CreateMap<CreateProductRequest, ProductModel>();
+            CreateMap<UpdateProductRequest, ProductModel>();
+            CreateMap<UpdateOrderRequest, OrderModel>()
+                .ForPath(target => target.Client.Id, opt => opt.MapFrom(source => source.ClientId))
+                .ForPath(target => target.User.Id, opt => opt.MapFrom(source => source.UserId));
             CreateMap<ProductModel, ProductResponse>();
 
         }
