@@ -30,6 +30,7 @@ public class SqlServerRepositoryTests
         var suffix = Guid.NewGuid().ToString("N");
         var clientId = suffix;
         var productId = suffix;
+        var secondProductId = Guid.NewGuid().ToString("N");
         var userId = suffix;
         string? createdOrderId = null;
 
@@ -65,6 +66,14 @@ public class SqlServerRepositoryTests
                 CreatedAt = DateTime.UtcNow
             };
             await products.CreateAsync(product);
+            await products.CreateAsync(new ProductModel
+            {
+                Id = secondProductId,
+                Description = "Limited Product",
+                SellValue = 10m,
+                Stock = 1,
+                CreatedAt = DateTime.UtcNow
+            });
 
             var createResult = await orderService.CreateAsync(new OrderModel
             {
@@ -104,12 +113,14 @@ public class SqlServerRepositoryTests
                 User = new UserModel { Id = userId },
                 Items = new List<OrderItemModel>
                 {
-                    new() { Product = new ProductModel { Id = productId }, Quantity = 6 }
+                    new() { Product = new ProductModel { Id = productId }, Quantity = 2 },
+                    new() { Product = new ProductModel { Id = secondProductId }, Quantity = 2 }
                 }
             });
 
             Assert.NotEmpty(rejectedOrder.Report);
             Assert.Equal(5, (await products.GetByIdAsync(productId))!.Stock);
+            Assert.Equal(1, (await products.GetByIdAsync(secondProductId))!.Stock);
             var ordersAfterRejection = await orderService.ListByFiltersAsync(null, clientId, userId);
             Assert.Empty(ordersAfterRejection.Data);
         }
@@ -118,6 +129,7 @@ public class SqlServerRepositoryTests
             if (!string.IsNullOrWhiteSpace(createdOrderId))
                 await orders.DeleteAsync(createdOrderId);
             await products.DeleteAsync(productId);
+            await products.DeleteAsync(secondProductId);
             await users.DeleteAsync(userId);
             await clients.DeleteAsync(clientId);
         }
