@@ -34,11 +34,16 @@ namespace Order.Domain.Services
         {
             var response = new Response();
 
+            user.Login = user.Login?.Trim();
+
             var validation = new UserValidation();
             var errors = validation.Validate(user).GetErrors();
 
             if (errors.Report.Count > 0)
                 return errors;
+
+            if (await _UserRepository.ExistsByLoginAsync(user.Login))
+                return Response.Unprocessable(Report.Create("Login already registered."));
 
             user.Id = _generators.Generate();
             user.CreatedAt = _timeProvider.utcDateTime();
