@@ -16,7 +16,7 @@ public class UserApplication(
     public async Task<Response<AuthResponse>> AuthAsync(AuthRequest auth)
     {
         var invalidCredentials = Response.Unprocessable<AuthResponse>(
-            Report.Create("Login or password is invalid."));
+            new List<Report> { Report.Create("Login or password is invalid.") });
 
         if (auth is null || string.IsNullOrWhiteSpace(auth.Login) || string.IsNullOrWhiteSpace(auth.Password))
             return invalidCredentials;
