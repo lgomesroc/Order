@@ -21,8 +21,8 @@ public class SqlServerRepositoryTests
         var clients = new ClientRepository(connector);
         var products = new ProductRepository(connector);
         var suffix = Guid.NewGuid().ToString("N");
-        var clientId = $"it-client-{suffix}";
-        var productId = $"it-product-{suffix}";
+        var clientId = suffix;
+        var productId = suffix;
 
         try
         {
