@@ -43,6 +43,8 @@ services:
       ASPNETCORE_ENVIRONMENT: Container
       ConnectionStrings__default: "Server=sqlserver,1433;Database=OrderDb;User Id=sa;Password=${MSSQL_SA_PASSWORD};TrustServerCertificate=True;Encrypt=False"
       AuthSettings__Secret: ${AUTH_JWT_SECRET:?Configure AUTH_JWT_SECRET in .env}
+      AuthSettings__Issuer: Order.Api
+      HttpsRedirection__Enabled: "false"
     ports:
       - "5005:8080"
     depends_on:
@@ -59,6 +61,7 @@ services:
       ASPNETCORE_URLS: http://+:8080
       ASPNETCORE_ENVIRONMENT: Container
       OrderApi__BaseUrl: http://api:8080/
+      HttpsRedirection__Enabled: "false"
     ports:
       - "8080:8080"
     depends_on:

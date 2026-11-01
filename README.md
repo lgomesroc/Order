@@ -65,9 +65,9 @@ docker compose down -v
 ```
 
 
-### 3. Configurar os segredos da API
+### 3. Executar sem Docker (opcional)
 
-Os valores sensíveis são mantidos no .NET User Secrets durante o desenvolvimento, não no repositório:
+Se preferir executar os projetos diretamente com o SDK, configure SQL Server localmente e use User Secrets:
 
 ```bash
 set -a
@@ -75,31 +75,27 @@ source .env
 set +a
 
 dotnet user-secrets set "ConnectionStrings:default" "Server=localhost,1433;Database=OrderDb;User Id=sa;Password=$MSSQL_SA_PASSWORD;TrustServerCertificate=True;Encrypt=False" --project Order.API/Order.csproj
-
-dotnet user-secrets set "AuthSettings:Secret" "Order-Development-Only-Signing-Key-2026-Do-Not-Reuse" --project Order.API/Order.csproj
+dotnet user-secrets set "AuthSettings:Secret" "$AUTH_JWT_SECRET" --project Order.API/Order.csproj
+dotnet user-secrets set "AuthSettings:Issuer" "Order.Api" --project Order.API/Order.csproj
 ```
 
-Em ambientes publicados, configure `ConnectionStrings__default` e `AuthSettings__Secret` como variáveis de ambiente/segredos do provedor.
+Aplique o schema manualmente apenas nesse modo alternativo, caso seu SQL Server ainda não tenha sido inicializado. No fluxo Docker Compose, schema e dados de demonstração são preparados automaticamente.
 
-### 4. Restaurar, compilar e executar
+Compile a solução:
 
 ```bash
 dotnet restore Order.sln
 dotnet build Order.sln --no-restore
-dotnet run --project Order.API/Order.csproj
 ```
 
-Swagger: [http://localhost:5005/swagger](http://localhost:5005/swagger).
-
-Em outro terminal, inicie a interface web:
+Inicie a API e a interface em terminais separados:
 
 ```bash
+dotnet run --project Order.API/Order.csproj
 dotnet run --project Order/Order.csproj
 ```
 
-Acesse a URL exibida pelo ASP.NET Core. A interface usa `OrderApi:BaseUrl` (padrão `http://localhost:5005/`). Para apontar para outro endereço, configure a variável `OrderApi__BaseUrl`. Crie uma conta pela página `/Register` (ou use `POST /api/user`) e entre pela página `/Login`.
-
-A interface Razor Pages permite cadastrar, consultar, atualizar e excluir clientes e produtos; pedidos podem ser criados, consultados, atualizados (substituindo os itens) e excluídos. A API protege esses recursos com JWT.
+A interface usa `OrderApi:BaseUrl` (padrão `http://localhost:5005/`). Crie uma conta pela página `/Register` ou use o usuário de demonstração carregado no ambiente Docker.
 
 ## Banco de dados
 
