@@ -23,6 +23,8 @@ var authSettings = authSettingsSection.Get<AuthSettings>()
     ?? throw new InvalidOperationException("AuthSettings configuration was not found.");
 if (string.IsNullOrWhiteSpace(authSettings.Secret))
     throw new InvalidOperationException("AuthSettings:Secret must be configured.");
+if (string.IsNullOrWhiteSpace(authSettings.Issuer))
+    throw new InvalidOperationException("AuthSettings:Issuer must be configured.");
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
@@ -49,7 +51,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
-        ValidIssuer = "programevc",
+        ValidIssuer = authSettings.Issuer,
         ValidateAudience = false,
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = signingKey,
