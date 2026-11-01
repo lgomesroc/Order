@@ -11,7 +11,13 @@ namespace Order.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserApplication _application;
-        public UserController(IUserApplication application) => _application = application;
+        private readonly IConfiguration _configuration;
+
+        public UserController(IUserApplication application, IConfiguration configuration)
+        {
+            _application = application;
+            _configuration = configuration;
+        }
 
         [HttpGet]
         public async Task<IActionResult> Get([FromQuery] string userId, [FromQuery] string name)
@@ -25,6 +31,9 @@ namespace Order.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Post([FromBody] CreateUserRequest request)
         {
+            if (!_configuration.GetValue<bool>("Registration:PublicEnabled"))
+                return NotFound();
+
             var response = await _application.CreateAsync(request);
             if (response.Report.Any()) return UnprocessableEntity(response.Report);
             return StatusCode(StatusCodes.Status201Created);
