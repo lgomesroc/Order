@@ -14,7 +14,6 @@ using Order.Domain.Services;
 using Order.Extensions;
 using Order.Infra.DataConnector;
 using Order.Infra.Repositories;
-using TimeProvider = Order.Domain.Common.TimeProvider;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -33,7 +32,7 @@ builder.Services.Configure<AuthSettings>(authSettingsSection);
 builder.Services.SwaggerConfiguration();
 builder.Services.AddScoped<IDbConnector>(_ => new SqlConnector(connectionString));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-builder.Services.AddScoped<ITimeProvider, TimeProvider>();
+builder.Services.AddScoped<ITimeProvider, Order.Domain.Common.TimeProvider>();
 builder.Services.AddScoped<IGenerators, Generators>();
 builder.Services.AddScoped<IClientService, ClientService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
@@ -41,9 +40,9 @@ builder.Services.AddScoped<IProductService, ProductService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ISecurityService, SecurityService>();
 builder.Services.AddScoped<IClientApplication, ClientApplication>();
-builder.Services.AddScoped<IOrderApplication, OrderApplication>();
+builder.Services.AddScoped<IOrderApplication, Order.Application.Applications.OrderApplication>();
 builder.Services.AddScoped<IProductApplication, ProductApplication>();
-builder.Services.AddScoped<IUserApplication, UserApplication>();
+builder.Services.AddScoped<Order.Application.Interfaces.IUserApplication, UserApplication>();
 builder.Services.AddScoped<ITokenManager, TokenManager>();
 
 var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(authSettings.Secret));
