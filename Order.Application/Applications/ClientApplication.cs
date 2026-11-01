@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Order.Application.DataContract.Request.Client;
 using Order.Application.DataContract.Response.Client;
 using Order.Application.Interfaces;
@@ -7,12 +8,16 @@ using Order.Domain.Validations.Base;
 
 namespace Order.Application.Applications;
 
-public class ClientApplication(IClientService clientService) : IClientApplication
+public class ClientApplication(IClientService clientService, ILogger<ClientApplication> logger) : IClientApplication
 {
     public async Task<Response> CreateAsync(CreateClientRequest request)
     {
         try { return await clientService.CreateAsync(ApplicationMapper.ToModel(request)); }
-        catch (Exception ex) { return Response.Unprocessable(Report.Create(ex.Message)); }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Unexpected error while creating a client.");
+            return Response.Unprocessable(Report.Create("The client could not be created."));
+        }
     }
 
     public Task<Response> DeleteAsync(string clientId) => clientService.DeleteAsync(clientId);
