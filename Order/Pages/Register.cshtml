@@ -9,7 +9,7 @@
 <form method="post" class="col-md-6">
     <div class="mb-3"><label asp-for="Name" class="form-label">Nome</label><input asp-for="Name" class="form-control" minlength="3" maxlength="30" required /></div>
     <div class="mb-3"><label asp-for="Login" class="form-label">Login</label><input asp-for="Login" class="form-control" required /></div>
-    <div class="mb-3"><label asp-for="Password" class="form-label">Senha</label><input asp-for="Password" type="password" class="form-control" minlength="6" autocomplete="new-password" required /></div>
+    <div class="mb-3"><label asp-for="Password" class="form-label">Senha</label><input asp-for="Password" type="password" class="form-control" minlength="8" autocomplete="new-password" required /></div>
     <div class="mb-3"><label asp-for="ConfirmPassword" class="form-label">Confirmar senha</label><input asp-for="ConfirmPassword" type="password" class="form-control" minlength="6" autocomplete="new-password" required /></div>
     <button class="btn btn-primary" type="submit">Criar conta</button>
     <a class="btn btn-link" asp-page="/Login">Voltar ao login</a>
