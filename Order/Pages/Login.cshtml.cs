@@ -26,9 +26,9 @@ public class LoginModel(OrderApiClient api) : PageModel
             HttpContext.Session.SetString("Order.ApiToken", result.Data.Token);
             return RedirectToPage("/Index");
         }
-        catch (Exception ex)
+        catch
         {
-            ErrorMessage = ex.Message;
+            ErrorMessage = "Login ou senha inválidos.";
             return Page();
         }
     }
