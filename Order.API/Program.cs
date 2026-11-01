@@ -3,7 +3,6 @@ using Microsoft.IdentityModel.Tokens;
 using Order.Application.Applications;
 using Order.Application.Interfaces;
 using Order.Application.Interfaces.Security;
-using Order.Application.Mapper;
 using Order.Application.Models;
 using Order.Application.Security;
 using Order.Domain.Common;
@@ -27,7 +26,6 @@ if (string.IsNullOrWhiteSpace(authSettings.Secret))
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddAutoMapper(typeof(Core));
 builder.Services.Configure<AuthSettings>(authSettingsSection);
 builder.Services.SwaggerConfiguration();
 builder.Services.AddScoped<IDbConnector>(_ => new SqlConnector(connectionString));

@@ -1,90 +1,64 @@
-﻿using AutoMapper;
 using Order.Application.DataContract.Request.User;
 using Order.Application.DataContract.Response.User;
 using Order.Application.Interfaces;
 using Order.Application.Interfaces.Security;
+using Order.Application.Mapper;
 using Order.Domain.Interfaces.Services;
-using Order.Domain.Models;
 using Order.Domain.Validations.Base;
 
-namespace Order.Application.Applications
+namespace Order.Application.Applications;
+
+public class UserApplication(
+    IUserService userService,
+    ISecurityService securityService,
+    ITokenManager tokenManager) : IUserApplication
 {
-    public class UserApplication : IUserApplication
+    public async Task<Response<AuthResponse>> AuthAsync(AuthRequest auth)
     {
-        private readonly IUserService _UserService;
-        private readonly IMapper _mapper;
-        private readonly ISecurityService _securityService;
-        private readonly ITokenManager _tokenManager;
+        var user = await userService.GetByLoginAsync(auth.Login);
+        if (user.Report.Any()) return Response.Unprocessable<AuthResponse>(user.Report);
 
-        public UserApplication(IUserService UserService, IMapper mapper, ISecurityService securityService, ITokenManager tokenManager)
+        var authenticated = await userService.AutheticationAsync(auth.Password, user.Data);
+        if (!authenticated.Data)
+            return Response.Unprocessable<AuthResponse>(Report.Create("Invalid password or login"));
+
+        var token = await tokenManager.GenerateTokenAsync(user.Data);
+        return new Response<AuthResponse>(token);
+    }
+
+    public async Task<Response> CreateAsync(CreateUserRequest request)
+    {
+        try
         {
-            _UserService = UserService;
-            _mapper = mapper;
-            _securityService = securityService;
-            _tokenManager = tokenManager;
+            var passwordsMatch = await securityService.ComparePassword(request.Password, request.ConfirmPassword);
+            if (!passwordsMatch.Data)
+                return Response.Unprocessable(Report.Create("Passwords do not match"));
+
+            var encryptedPassword = await securityService.EncryptPassword(request.Password);
+            if (encryptedPassword.Report.Any())
+                return Response.Unprocessable(encryptedPassword.Report);
+
+            request.Password = encryptedPassword.Data;
+            return await userService.CreateAsync(ApplicationMapper.ToModel(request));
         }
-
-        public async Task<Response<AuthResponse>> AuthAsync(AuthRequest auth)
+        catch (Exception ex)
         {
-            var user = await _UserService.GetByLoginAsync(auth.Login);
-
-            if (user.Report.Any())
-                return Response.Unprocessable<AuthResponse>(user.Report);
-
-            var isAuthenticated = await _UserService.AutheticationAsync(auth.Password, user.Data);
-
-            if (!isAuthenticated.Data)
-                return Response.Unprocessable<AuthResponse>(new List<Report>() { Report.Create("Invalid password or login") });
-
-            var token = await _tokenManager.GenerateTokenAsync(user.Data);
-
-            return new Response<AuthResponse>(token);
+            return Response.Unprocessable(Report.Create(ex.Message));
         }
+    }
 
-        public async Task<Response> CreateAsync(CreateUserRequest User)
+    public async Task<Response<List<UserResponse>>> ListByFilterAsync(string userId = null, string name = null)
+    {
+        try
         {
-            try
-            {
-                var isEquals = await _securityService.ComparePassword(User.Password, User.ConfirmPassword);
-
-                if (!isEquals.Data)
-                    return Response.Unprocessable(Report.Create("Passwords do not match"));
-
-                var passwordEncripted = await _securityService.EncryptPassword(User.Password);
-
-                User.Password = passwordEncripted.Data;
-
-                var UserModel = _mapper.Map<UserModel>(User);
-
-                return await _UserService.CreateAsync(UserModel);
-            }
-            catch (Exception ex)
-            {
-                var response = Report.Create(ex.Message);
-
-                return Response.Unprocessable(response);
-            }
+            var result = await userService.ListByFilterAsync(userId, name);
+            return result.Report.Any()
+                ? Response.Unprocessable<List<UserResponse>>(result.Report)
+                : Response.OK(result.Data.Select(ApplicationMapper.ToResponse).ToList());
         }
-
-        public async Task<Response<List<UserResponse>>> ListByFilterAsync(string userId = null, string name = null)
+        catch (Exception ex)
         {
-            try
-            {
-                Response<List<UserModel>> user = await _UserService.ListByFilterAsync(userId, name);
-
-                if (user.Report.Any())
-                    return Response.Unprocessable<List<UserResponse>>(user.Report);
-
-                var response = _mapper.Map<List<UserResponse>>(user.Data);
-
-                return Response.OK(response);
-            }
-            catch (Exception ex)
-            {
-                var response = Report.Create(ex.Message);
-
-                return Response.Unprocessable<List<UserResponse>>(new List<Report>() { response });
-            }
+            return Response.Unprocessable<List<UserResponse>>(Report.Create(ex.Message));
         }
     }
 }
