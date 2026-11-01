@@ -1,10 +1,20 @@
-﻿@page
+@page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home page";
+    ViewData["Title"] = "Painel";
 }
-
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div>
+<h1>Order</h1>
+<p class="lead">Gerenciamento de clientes, produtos e pedidos.</p>
+@if (Context.Session.GetString("Order.ApiToken") is null)
+{
+    <p><a class="btn btn-primary" asp-page="/Login">Entrar</a></p>
+}
+else
+{
+    <div class="list-group col-md-5">
+        <a class="list-group-item list-group-item-action" asp-page="/Products">Gerenciar produtos</a>
+        <a class="list-group-item list-group-item-action" asp-page="/Clients">Gerenciar clientes</a>
+        <a class="list-group-item list-group-item-action" asp-page="/Orders">Gerenciar pedidos</a>
+    </div>
+    <form method="post" asp-page="/Logout" class="mt-3"><button class="btn btn-outline-secondary">Sair</button></form>
+}
