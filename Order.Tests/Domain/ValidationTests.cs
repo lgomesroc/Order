@@ -34,6 +34,20 @@ public class ValidationTests
     }
 
     [Fact]
+    public void ProductValidation_RejectsNegativeStock()
+    {
+        var result = new ProductValidation().Validate(new ProductModel
+        {
+            Description = "Keyboard",
+            SellValue = 10m,
+            Stock = -1
+        });
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, error => error.PropertyName == nameof(ProductModel.Stock));
+    }
+
+    [Fact]
     public void ClientValidation_RejectsInvalidEmail()
     {
         var result = new ClientValidation().Validate(new ClientModel
