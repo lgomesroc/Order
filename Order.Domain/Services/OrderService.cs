@@ -1,4 +1,4 @@
-﻿using Order.Domain.Common;
+using Order.Domain.Common;
 using Order.Domain.Interfaces.Repositories;
 using Order.Domain.Interfaces.Services;
 using Order.Domain.Models;
@@ -13,8 +13,7 @@ namespace Order.Domain.Services
         private readonly ITimeProvider _timeProvider;
         private readonly IGenerators _generators;
 
-        public OrderService(ITimeProvider timeProvider,
-                            IGenerators generators, IUnitOfWork unitOfWork)
+        public OrderService(ITimeProvider timeProvider, IGenerators generators, IUnitOfWork unitOfWork)
         {
             _timeProvider = timeProvider;
             _generators = generators;
@@ -23,72 +22,133 @@ namespace Order.Domain.Services
 
         public async Task<Response> CreateAsync(OrderModel order)
         {
-            var response = new Response();
+            var response = Validate(order);
+            if (response.Report.Any()) return response;
 
-            var validation = new OrderValidation();
-            var errors = validation.Validate(order).GetErrors();
-
-            if (errors.Report.Count > 0)
-                return errors;
-
-            order.Id = _generators.Generate();
-            order.CreatedAt = _timeProvider.utcDateTime();
-
-            foreach (var item in order.Items)
+            _unitOfWork.BeginTransaction();
+            try
             {
-                item.Order = order;
-                item.Id = _generators.Generate();
-                item.CreatedAt = _timeProvider.utcDateTime();
+                if (!await RelatedEntitiesExistAsync(order, response))
+                {
+                    _unitOfWork.RollbackTransaction();
+                    return response;
+                }
+
+                order.Id = _generators.Generate();
+                order.CreatedAt = _timeProvider.utcDateTime();
+
+                if (!await ReserveItemsAsync(order, response))
+                {
+                    _unitOfWork.RollbackTransaction();
+                    return response;
+                }
+
+                await _unitOfWork.OrderRepository.CreateAsync(order);
+                _unitOfWork.CommitTransaction();
+                return response;
             }
+            catch
+            {
+                _unitOfWork.RollbackTransaction();
+                response.Report.Add(Report.Create("The order could not be created. No changes were saved."));
+                return response;
+            }
+        }
 
-            await _unitOfWork.OrderRepository.CreateAsync(order);
+        public async Task<Response> UpdateAsync(OrderModel order)
+        {
+            var response = Validate(order);
+            if (response.Report.Any()) return response;
 
-            return response;
+            _unitOfWork.BeginTransaction();
+            try
+            {
+                var current = await _unitOfWork.OrderRepository.GetByIdAsync(order.Id);
+                if (current == null)
+                {
+                    _unitOfWork.RollbackTransaction();
+                    response.Report.Add(Report.Create($"Order {order.Id} does not exist."));
+                    return response;
+                }
+
+                if (!await RelatedEntitiesExistAsync(order, response))
+                {
+                    _unitOfWork.RollbackTransaction();
+                    return response;
+                }
+
+                current.Items = await _unitOfWork.OrderRepository.ListItemByOrderIdAsync(order.Id);
+                await RestoreItemsAsync(current.Items);
+
+                if (!await ReserveItemsAsync(order, response))
+                {
+                    _unitOfWork.RollbackTransaction();
+                    return response;
+                }
+
+                await _unitOfWork.OrderRepository.UpdateAsync(order);
+                _unitOfWork.CommitTransaction();
+                return response;
+            }
+            catch
+            {
+                _unitOfWork.RollbackTransaction();
+                response.Report.Add(Report.Create("The order could not be updated. No changes were saved."));
+                return response;
+            }
         }
 
         public async Task<Response> DeleteAsync(string orderId)
         {
             var response = new Response();
-
-            var exists = await _unitOfWork.OrderRepository.ExistsByIdAsync(orderId);
-
-            if (!exists)
+            _unitOfWork.BeginTransaction();
+            try
             {
-                response.Report.Add(Report.Create($"Order {orderId} not exists!"));
+                var exists = await _unitOfWork.OrderRepository.ExistsByIdAsync(orderId);
+                if (!exists)
+                {
+                    _unitOfWork.RollbackTransaction();
+                    response.Report.Add(Report.Create($"Order {orderId} does not exist."));
+                    return response;
+                }
+
+                var items = await _unitOfWork.OrderRepository.ListItemByOrderIdAsync(orderId);
+                await RestoreItemsAsync(items);
+                await _unitOfWork.OrderRepository.DeleteAsync(orderId);
+                _unitOfWork.CommitTransaction();
                 return response;
             }
-
-            await _unitOfWork.OrderRepository.DeleteAsync(orderId);
-
-            return response;
+            catch
+            {
+                _unitOfWork.RollbackTransaction();
+                response.Report.Add(Report.Create("The order could not be deleted. No changes were saved."));
+                return response;
+            }
         }
 
         public async Task<Response<OrderModel>> GetByIdAsync(string orderId)
         {
             var response = new Response<OrderModel>();
             _unitOfWork.BeginTransaction();
-
             try
             {
-                var exists = await _unitOfWork.OrderRepository.ExistsByIdAsync(orderId);
-
-                if (!exists)
+                var data = await _unitOfWork.OrderRepository.GetByIdAsync(orderId);
+                if (data == null)
                 {
-                    response.Report.Add(Report.Create($"Order {orderId} not exists!"));
+                    _unitOfWork.RollbackTransaction();
+                    response.Report.Add(Report.Create($"Order {orderId} does not exist."));
                     return response;
                 }
 
-                var data = await _unitOfWork.OrderRepository.GetByIdAsync(orderId);
                 data.Items = await _unitOfWork.OrderRepository.ListItemByOrderIdAsync(orderId);
-
                 _unitOfWork.CommitTransaction();
-
                 response.Data = data;
                 return response;
             }
-            catch (Exception ex)
+            catch
             {
                 _unitOfWork.RollbackTransaction();
+                response.Report.Add(Report.Create("The order could not be retrieved."));
                 return response;
             }
         }
@@ -96,70 +156,82 @@ namespace Order.Domain.Services
         public async Task<Response<List<OrderModel>>> ListByFiltersAsync(string orderId = null, string clientId = null, string userId = null)
         {
             var response = new Response<List<OrderModel>>();
-
-            if (!string.IsNullOrWhiteSpace(orderId))
-            {
-                var exists = await _unitOfWork.OrderRepository.ExistsByIdAsync(orderId);
-
-                if (!exists)
-                {
-                    response.Report.Add(Report.Create($"Order {orderId} not exists!"));
-                    return response;
-                }
-            }
-
             var data = await _unitOfWork.OrderRepository.ListByFilterAsync(orderId, clientId, userId);
             response.Data = data;
-
             return response;
         }
 
-        public async Task<Response> UpdateAsync(OrderModel order)
+        private static Response Validate(OrderModel order)
         {
-            var response = new Response();
-
             var validation = new OrderValidation();
-            var errors = validation.Validate(order).GetErrors();
+            return validation.Validate(order).GetErrors();
+        }
 
-            if (errors.Report.Count > 0)
-                return errors;
-
-            var exists = await _unitOfWork.OrderRepository.ExistsByIdAsync(order.Id);
-
-            if (!exists)
+        private async Task<bool> RelatedEntitiesExistAsync(OrderModel order, Response response)
+        {
+            if (!await _unitOfWork.ClientRepository.ExistsByIdAsync(order.Client.Id))
             {
-                response.Report.Add(Report.Create($"Order {order.Id} not exists!"));
-                return response;
+                response.Report.Add(Report.Create($"Client {order.Client.Id} does not exist."));
+                return false;
             }
 
-            await _unitOfWork.OrderRepository.UpdateAsync(order);
+            if (!await _unitOfWork.UserRepository.ExistsByIdAsync(order.User.Id))
+            {
+                response.Report.Add(Report.Create($"User {order.User.Id} does not exist."));
+                return false;
+            }
 
-            return response;
+            return true;
         }
 
-        Task<Response> IOrderService.CreateAsync(OrderModel order)
+        private async Task<bool> ReserveItemsAsync(OrderModel order, Response response)
         {
-            throw new NotImplementedException();
+            foreach (var item in order.Items)
+            {
+                if (item.Product == null || string.IsNullOrWhiteSpace(item.Product.Id))
+                {
+                    response.Report.Add(Report.Create("Every order item must reference a product."));
+                    return false;
+                }
+
+                var product = await _unitOfWork.ProductRepository.GetByIdAsync(item.Product.Id);
+                if (product == null)
+                {
+                    response.Report.Add(Report.Create($"Product {item.Product.Id} does not exist."));
+                    return false;
+                }
+
+                if (product.Stock < item.Quantity)
+                {
+                    response.Report.Add(Report.Create($"Insufficient stock for product {product.Id}."));
+                    return false;
+                }
+
+                product.Stock -= item.Quantity;
+                await _unitOfWork.ProductRepository.UpdateAsync(product);
+
+                item.Product = product;
+                item.SellValue = product.SellValue;
+                item.TotalAmount = product.SellValue * item.Quantity;
+                item.Order = order;
+                item.Id = _generators.Generate();
+                item.CreatedAt = _timeProvider.utcDateTime();
+            }
+
+            return true;
         }
 
-        Task<Response> IOrderService.DeleteAsync(OrderModel order)
+        private async Task RestoreItemsAsync(IEnumerable<OrderItemModel> items)
         {
-            throw new NotImplementedException();
-        }
+            foreach (var item in items)
+            {
+                if (item.Product == null || string.IsNullOrWhiteSpace(item.Product.Id)) continue;
+                var product = await _unitOfWork.ProductRepository.GetByIdAsync(item.Product.Id);
+                if (product == null) continue;
 
-        Task<Response<OrderModel>> IOrderService.GetByIdAsync(string orderID)
-        {
-            throw new NotImplementedException();
-        }
-
-        Task<Response<List<OrderModel>>> IOrderService.ListByFiltersAsync(string orderId, string clientId, string userId)
-        {
-            throw new NotImplementedException();
-        }
-
-        Task<Response> IOrderService.UpdateAsync(OrderModel order)
-        {
-            throw new NotImplementedException();
+                product.Stock += item.Quantity;
+                await _unitOfWork.ProductRepository.UpdateAsync(product);
+            }
         }
     }
 }

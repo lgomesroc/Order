@@ -1,50 +1,38 @@
-﻿using AutoMapper;
 using Order.Application.DataContract.Request.Product;
 using Order.Application.DataContract.Response.Product;
 using Order.Application.Interfaces;
+using Order.Application.Mapper;
 using Order.Domain.Interfaces.Services;
-using Order.Domain.Models;
 using Order.Domain.Validations.Base;
 
-namespace Order.Application.Applications
+namespace Order.Application.Applications;
+
+public class ProductApplication(IProductService productService) : IProductApplication
 {
-    public class ProductApplication : IProductApplication
+    public async Task<Response> CreateAsync(CreateProductRequest request)
     {
-        private readonly IProductService _ProductService;
-        private readonly IMapper _mapper;
-
-        public ProductApplication(IProductService ProductService, IMapper mapper)
-        {
-            _ProductService = ProductService;
-            _mapper = mapper;
-        }
-
-        public async Task<Response> CreateAsync(CreateProductRequest Product)
-        {
-            try
-            {
-                var ProductModel = _mapper.Map<ProductModel>(Product);
-
-                return await _ProductService.CreateAsync(ProductModel);
-            }
-            catch (Exception ex)
-            {
-                var response = Report.Create(ex.Message);
-
-                return Response.Unprocessable(response);
-            }
-        }
-
-        public async Task<Response<List<ProductResponse>>> ListByFilterAsync(string productId = null, string description = null)
-        {
-            Response<List<ProductModel>> product = await _ProductService.ListByFilterAsync(productId, description);
-
-            if (product.Report.Any())
-                return Response.Unprocessable<List<ProductResponse>>(product.Report);
-
-            var response = _mapper.Map<List<ProductResponse>>(product.Data);
-
-            return Response.OK(response);
-        }
+        try { return await productService.CreateAsync(ApplicationMapper.ToModel(request)); }
+        catch (Exception ex) { return Response.Unprocessable(Report.Create(ex.Message)); }
     }
+
+    public async Task<Response<ProductResponse>> GetByIdAsync(string productId)
+    {
+        var result = await productService.GetByIdAsync(productId);
+        return result.Report.Any()
+            ? Response.Unprocessable<ProductResponse>(result.Report)
+            : Response.OK(ApplicationMapper.ToResponse(result.Data));
+    }
+
+    public async Task<Response<List<ProductResponse>>> ListByFilterAsync(string productId = null, string description = null)
+    {
+        var result = await productService.ListByFilterAsync(productId, description);
+        return result.Report.Any()
+            ? Response.Unprocessable<List<ProductResponse>>(result.Report)
+            : Response.OK(result.Data.Select(ApplicationMapper.ToResponse).ToList());
+    }
+
+    public Task<Response> UpdateAsync(UpdateProductRequest request) =>
+        productService.UpdateAsync(ApplicationMapper.ToModel(request));
+
+    public Task<Response> DeleteAsync(string productId) => productService.DeleteAsync(productId);
 }

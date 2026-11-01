@@ -1,8 +1,7 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Order.Interfaces.Applications;
-using Order.Request;
-
+using Order.Application.DataContract.Request.Product;
+using Order.Application.Interfaces;
 namespace Order.Controllers
 {
     [Route("api/product")]
@@ -10,58 +9,38 @@ namespace Order.Controllers
     [Authorize]
     public class ProductController : ControllerBase
     {
-        private readonly IProductApplication _ProductApplication;
-
-        public ProductController(IProductApplication ProductApplication)
+        private readonly IProductApplication _application;
+        public ProductController(IProductApplication application) => _application = application;
+        [HttpGet]
+        public async Task<IActionResult> Get([FromQuery] string productId, [FromQuery] string description)
         {
-            _ProductApplication = ProductApplication;
+            var result = await _application.ListByFilterAsync(productId, description);
+            return result.Report.Any() ? UnprocessableEntity(result.Report) : Ok(result.Data);
         }
-
-        /// <summary>
-        /// Get all products
-        /// </summary>
-        /// <param name="productId"></param>
-        /// <param name="description"></param>
-        /// <returns></returns>
-        public async Task<ActionResult> Get([FromQuery] string productId, [FromQuery] string description)
-        {
-            var response = await _ProductApplication.ListByFilterAsync(productId, description);
-
-            if (response.Any())
-                return UnprocessableEntity(response);
-
-            return Ok(response);
-        }
-
-        // GET api/<ProductController>/5
         [HttpGet("{id}")]
-        public string Get(int id)
+        public async Task<IActionResult> GetById(string id)
         {
-            return "value";
+            var result = await _application.GetByIdAsync(id);
+            return result.Report.Any() ? NotFound(result.Report) : Ok(result.Data);
         }
-
-        // POST api/<ProductController>
         [HttpPost]
-        public async Task<ActionResult<CreateProductResponse>> Post([FromBody] CreateProductRequest request)
+        public async Task<IActionResult> Post([FromBody] CreateProductRequest request)
         {
-            var response = await _ProductApplication.CreateAsync(request);
-
-            if (response != null && !string.IsNullOrEmpty(response.ToString()))
-                return UnprocessableEntity(response.ToString());
-
-            return Ok(response);
+            var result = await _application.CreateAsync(request);
+            return result.Report.Any() ? UnprocessableEntity(result.Report) : StatusCode(StatusCodes.Status201Created);
         }
-
-        // PUT api/<ProductController>/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        public async Task<IActionResult> Put(string id, [FromBody] UpdateProductRequest request)
         {
+            request.Id = id;
+            var result = await _application.UpdateAsync(request);
+            return result.Report.Any() ? UnprocessableEntity(result.Report) : NoContent();
         }
-
-        // DELETE api/<ProductController>/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public async Task<IActionResult> Delete(string id)
         {
+            var result = await _application.DeleteAsync(id);
+            return result.Report.Any() ? NotFound(result.Report) : NoContent();
         }
     }
 }

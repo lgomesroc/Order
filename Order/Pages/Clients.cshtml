@@ -1,0 +1,33 @@
+@page
+@model Order.Pages.ClientsModel
+@{
+    ViewData["Title"] = "Clientes";
+}
+<h1>Clientes</h1>
+@if (TempData["Success"] is string success) { <div class="alert alert-success">@success</div> }
+@if (TempData["Error"] is string error) { <div class="alert alert-danger">@error</div> }
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage)) { <div class="alert alert-danger">@Model.ErrorMessage</div> }
+<section class="card card-body mb-4">
+    <h2 class="h5">Cadastrar cliente</h2>
+    <form method="post" asp-page-handler="Create" class="row g-2">
+        <div class="col-md-3"><input asp-for="Form.Name" class="form-control" placeholder="Nome" required minlength="3" maxlength="30" /></div>
+        <div class="col-md-3"><input asp-for="Form.Email" type="email" class="form-control" placeholder="E-mail" required /></div>
+        <div class="col-md-2"><input asp-for="Form.PhoneNumber" class="form-control" placeholder="Telefone" required /></div>
+        <div class="col-md-2"><input asp-for="Form.Address" class="form-control" placeholder="Endereço" /></div>
+        <div class="col-md-2"><button class="btn btn-primary w-100">Cadastrar</button></div>
+    </form>
+</section>
+@foreach (var item in Model.Clients)
+{
+    <form method="post" class="row g-2 align-items-center border-bottom py-2">
+        <input type="hidden" name="Form.Id" value="@item.Id" />
+        <div class="col-md-3"><input name="Form.Name" value="@item.Name" class="form-control" required /></div>
+        <div class="col-md-3"><input name="Form.Email" value="@item.Email" type="email" class="form-control" required /></div>
+        <div class="col-md-2"><input name="Form.PhoneNumber" value="@item.PhoneNumber" class="form-control" required /></div>
+        <div class="col-md-2"><input name="Form.Address" value="@item.Address" class="form-control" /></div>
+        <div class="col-md-2 d-flex gap-1">
+            <button asp-page-handler="Update" class="btn btn-outline-primary btn-sm">Salvar</button>
+            <button asp-page-handler="Delete" asp-route-id="@item.Id" class="btn btn-outline-danger btn-sm" formnovalidate>Excluir</button>
+        </div>
+    </form>
+}

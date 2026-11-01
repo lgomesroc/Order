@@ -1,77 +1,38 @@
-﻿using AutoMapper;
 using Order.Application.DataContract.Request.Client;
 using Order.Application.DataContract.Response.Client;
 using Order.Application.Interfaces;
+using Order.Application.Mapper;
 using Order.Domain.Interfaces.Services;
-using Order.Domain.Models;
 using Order.Domain.Validations.Base;
 
-namespace Order.Application.Applications
+namespace Order.Application.Applications;
+
+public class ClientApplication(IClientService clientService) : IClientApplication
 {
-    public class ClientApplication : IClientApplication
+    public async Task<Response> CreateAsync(CreateClientRequest request)
     {
-        private readonly IClientService _clientService;
-        private readonly IMapper _mapper;
-
-        public ClientApplication(IClientService clientService, IMapper mapper)
-        {
-            _clientService = clientService;
-            _mapper = mapper;
-        }
-
-        public async Task<Response> CreateAsync(CreateClientRequest client)
-        {
-            try
-            {
-                var clientModel = _mapper.Map<ClientModel>(client);
-
-                return await _clientService.CreateAsync(clientModel);
-            }
-            catch (Exception ex)
-            {
-                var response = Report.Create(ex.Message);
-
-                return Response.Unprocessable(response);
-            }
-        }
-
-        public async Task<Response> DeleteAsync(string clientId)
-        {
-            return await _clientService.DeleteAsync(clientId);
-        }
-
-        // Tipos de retorno corrigidos
-        public async Task<Response<clientResponse>> GetByIdAsync(string clientId)
-        {
-            Response<ClientModel> client = await _clientService.GetByIdAsync(clientId);
-
-            if (client.Report.Any())
-                return Response.Unprocessable<clientResponse>(client.Report);
-
-            var response = _mapper.Map<clientResponse>(client.Data);
-
-            return Response.OK(response);
-        }
-
-        public async Task<Response<List<clientResponse>>> ListByFilterAsync(string clientId, string name)
-        {
-            Response<List<ClientModel>> client = await _clientService.ListByFiltersAsync(clientId, name);
-
-            if (client.Report.Any())
-                return Response.Unprocessable<List<clientResponse>>(client.Report);
-
-            var response = _mapper.Map<List<clientResponse>>(client.Data);
-
-            return Response.OK(response);
-        }
-
-        public async Task<Response> UpdateAsync(UpdateClientRequest request)
-        {
-            var clientModel = _mapper.Map<ClientModel>(request);
-
-            return await _clientService.UpdateAsync(clientModel);
-        }
-
-        // Métodos duplicados removidos
+        try { return await clientService.CreateAsync(ApplicationMapper.ToModel(request)); }
+        catch (Exception ex) { return Response.Unprocessable(Report.Create(ex.Message)); }
     }
+
+    public Task<Response> DeleteAsync(string clientId) => clientService.DeleteAsync(clientId);
+
+    public async Task<Response<clientResponse>> GetByIdAsync(string clientId)
+    {
+        var result = await clientService.GetByIdAsync(clientId);
+        return result.Report.Any()
+            ? Response.Unprocessable<clientResponse>(result.Report)
+            : Response.OK(ApplicationMapper.ToResponse(result.Data));
+    }
+
+    public async Task<Response<List<clientResponse>>> ListByFilterAsync(string clientId, string name)
+    {
+        var result = await clientService.ListByFiltersAsync(clientId, name);
+        return result.Report.Any()
+            ? Response.Unprocessable<List<clientResponse>>(result.Report)
+            : Response.OK(result.Data.Select(ApplicationMapper.ToResponse).ToList());
+    }
+
+    public Task<Response> UpdateAsync(UpdateClientRequest request) =>
+        clientService.UpdateAsync(ApplicationMapper.ToModel(request));
 }

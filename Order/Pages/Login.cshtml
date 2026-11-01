@@ -1,0 +1,13 @@
+@page
+@model Order.Pages.LoginModel
+@{
+    ViewData["Title"] = "Entrar";
+}
+<h1>Entrar no Order</h1>
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage)) { <div class="alert alert-danger">@Model.ErrorMessage</div> }
+<p><a asp-page="/Register">Ainda não tem conta? Cadastre-se.</a></p>
+<form method="post" class="col-md-5">
+    <div class="mb-3"><label asp-for="Login" class="form-label">Login</label><input asp-for="Login" class="form-control" autocomplete="username" required /></div>
+    <div class="mb-3"><label asp-for="Password" class="form-label">Senha</label><input asp-for="Password" type="password" class="form-control" autocomplete="current-password" required /></div>
+    <button class="btn btn-primary" type="submit">Entrar</button>
+</form>

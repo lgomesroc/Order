@@ -74,11 +74,9 @@ namespace Order.Infra.Repositories
         }
         public async Task<bool> ExistsByIdAsync(string userId)
         {
-            string sql = $"SELECT 1 FROM User WHERE Id = @Id ";
+            const string sql = "SELECT CASE WHEN EXISTS (SELECT 1 FROM [dbo].[User] WHERE [Id] = @Id) THEN 1 ELSE 0 END";
 
-            var users = await _dbConnector.DbConnection.QueryAsync<bool>(sql, new { Id = userId }, _dbConnector.DbTransaction);
-
-            return users.FirstOrDefault();
+            return await _dbConnector.DbConnection.ExecuteScalarAsync<bool>(sql, new { Id = userId }, _dbConnector.DbTransaction);
         }
         public async Task<bool> ExistsByLoginAsync(string login)
         {
@@ -96,17 +94,17 @@ namespace Order.Infra.Repositories
 
             return users.FirstOrDefault();
         }
-        public async Task<List<UserModel>> ListByFilterAsync(string login = null, string name = null)
+        public async Task<List<UserModel>> ListByFilterAsync(string userId = null, string name = null)
         {
             string sql = $"{baseSql} ";
 
-            if (!string.IsNullOrWhiteSpace(login))
-                sql += "AND login = @Login";
+            if (!string.IsNullOrWhiteSpace(userId))
+                sql += "AND [Id] = @UserId";
 
             if (!string.IsNullOrWhiteSpace(name))
-                sql += "AND Name like @Name";
+                sql += "AND [Name] like @Name";
 
-            var users = await _dbConnector.DbConnection.QueryAsync<UserModel>(sql, new { Login = login, Name = "%" + name + "%" }, _dbConnector.DbTransaction);
+            var users = await _dbConnector.DbConnection.QueryAsync<UserModel>(sql, new { UserId = userId, Name = "%" + name + "%" }, _dbConnector.DbTransaction);
 
             return users.ToList();
         }

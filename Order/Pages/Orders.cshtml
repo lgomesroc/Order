@@ -1,0 +1,42 @@
+@page
+@model Order.Pages.OrdersModel
+@{
+    ViewData["Title"] = "Pedidos";
+}
+<h1>Pedidos</h1>
+@if (TempData["Success"] is string success) { <div class="alert alert-success">@success</div> }
+@if (TempData["Error"] is string error) { <div class="alert alert-danger">@error</div> }
+@if (!string.IsNullOrWhiteSpace(Model.ErrorMessage)) { <div class="alert alert-danger">@Model.ErrorMessage</div> }
+<section class="card card-body mb-4">
+    <h2 class="h5">Cadastrar pedido</h2>
+    <form method="post" asp-page-handler="Create" class="row g-2">
+        <div class="col-md-3"><input asp-for="Form.ClientId" class="form-control" placeholder="ID do cliente" required /></div>
+        <div class="col-md-3"><input asp-for="Form.UserId" class="form-control" placeholder="ID do usuário" required /></div>
+        <div class="col-md-3"><input asp-for="Form.ProductId" class="form-control" placeholder="ID do produto" required /></div>
+        <div class="col-md-1"><input asp-for="Form.Quantity" type="number" min="1" class="form-control" required /></div>
+        <div class="col-md-2"><button class="btn btn-primary w-100">Cadastrar</button></div>
+    </form>
+</section>
+<table class="table table-striped">
+    <thead><tr><th>Pedido</th><th>Cliente</th><th>Usuário</th><th>Itens</th><th>Ações</th></tr></thead>
+    <tbody>
+    @foreach (var item in Model.Orders)
+    {
+        <tr>
+            <td>@item.Id</td><td>@item.ClientId</td><td>@item.UserId</td>
+            <td>@string.Join(", ", item.Items.Select(x => $"{x.ProductId} × {x.Quantity}"))</td>
+            <td>
+                <form method="post" class="d-flex flex-wrap gap-1">
+                    <input type="hidden" name="Form.Id" value="@item.Id" />
+                    <input type="hidden" name="Form.ClientId" value="@item.ClientId" />
+                    <input type="hidden" name="Form.UserId" value="@item.UserId" />
+                    <input type="text" name="Form.ProductId" class="form-control form-control-sm" placeholder="Novo produto ID" required />
+                    <input type="number" name="Form.Quantity" value="1" min="1" class="form-control form-control-sm" required />
+                    <button asp-page-handler="Update" class="btn btn-outline-primary btn-sm">Substituir itens</button>
+                    <button asp-page-handler="Delete" asp-route-id="@item.Id" class="btn btn-outline-danger btn-sm" formnovalidate>Excluir</button>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
