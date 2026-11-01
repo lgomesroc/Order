@@ -99,7 +99,7 @@ A interface usa `OrderApi:BaseUrl` (padrão `http://localhost:5005/`). Crie uma 
 
 ## Banco de dados
 
-O esquema inicial está em [scrip order.sql](scrip%20order.sql). Ele foi alinhado aos nomes de tabelas e tipos usados pelos repositórios. O banco local padrão é `OrderDb`.
+O esquema inicial está em [schema.sql](schema.sql). Ele foi alinhado aos nomes de tabelas e tipos usados pelos repositórios. O banco local padrão é `OrderDb`.
 
 ## Segurança
 
@@ -107,7 +107,7 @@ As senhas dos usuários são armazenadas como hashes BCrypt. A chave JWT e a con
 
 ## Estado do projeto
 
-A V1 está em validação. As PRs de estabilização permanecem como rascunho até a compilação, os testes automatizados e a execução ponta a ponta da API e da interface serem validados.
+A V1 está funcional e em fase de consolidação. A conclusão depende da revisão e integração das PRs pendentes, da validação ponta a ponta da API e da interface e da atualização final desta documentação.
 
 
 ## Validation strategy
