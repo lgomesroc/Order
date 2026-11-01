@@ -14,6 +14,12 @@ public class ProductsModel(OrderApiClient api) : PageModel
     {
         if (!TryGetToken(out var token)) return RedirectToPage("/Login");
         try { Products = await api.GetAsync<List<ProductViewModel>>("api/product", token) ?? []; }
+        catch (ApiUnauthorizedException)
+        {
+            HttpContext.Session.Clear();
+            TempData["Error"] = "Sua sessão expirou. Faça login novamente.";
+            return RedirectToPage("/Login");
+        }
         catch (Exception ex) { ErrorMessage = ex.Message; }
         return Page();
     }
@@ -22,6 +28,18 @@ public class ProductsModel(OrderApiClient api) : PageModel
     {
         if (!TryGetToken(out var token)) return RedirectToPage("/Login");
         try { await api.PostAsync("api/product", new { Form.Description, Form.SellValue, Form.Stock }, token); TempData["Success"] = "Produto cadastrado."; }
+        catch (ApiUnauthorizedException)
+        {
+            HttpContext.Session.Clear();
+            TempData["Error"] = "Sua sessão expirou. Faça login novamente.";
+            return RedirectToPage("/Login");
+        }
+        catch (ApiUnauthorizedException)
+        {
+            HttpContext.Session.Clear();
+            TempData["Error"] = "Sua sessão expirou. Faça login novamente.";
+            return RedirectToPage("/Login");
+        }
         catch (Exception ex) { TempData["Error"] = ex.Message; }
         return RedirectToPage();
     }
@@ -30,6 +48,18 @@ public class ProductsModel(OrderApiClient api) : PageModel
     {
         if (!TryGetToken(out var token)) return RedirectToPage("/Login");
         try { await api.PutAsync($"api/product/{Uri.EscapeDataString(Form.Id)}", Form, token); TempData["Success"] = "Produto atualizado."; }
+        catch (ApiUnauthorizedException)
+        {
+            HttpContext.Session.Clear();
+            TempData["Error"] = "Sua sessão expirou. Faça login novamente.";
+            return RedirectToPage("/Login");
+        }
+        catch (ApiUnauthorizedException)
+        {
+            HttpContext.Session.Clear();
+            TempData["Error"] = "Sua sessão expirou. Faça login novamente.";
+            return RedirectToPage("/Login");
+        }
         catch (Exception ex) { TempData["Error"] = ex.Message; }
         return RedirectToPage();
     }
@@ -38,6 +68,18 @@ public class ProductsModel(OrderApiClient api) : PageModel
     {
         if (!TryGetToken(out var token)) return RedirectToPage("/Login");
         try { await api.DeleteAsync($"api/product/{Uri.EscapeDataString(id)}", token); TempData["Success"] = "Produto excluído."; }
+        catch (ApiUnauthorizedException)
+        {
+            HttpContext.Session.Clear();
+            TempData["Error"] = "Sua sessão expirou. Faça login novamente.";
+            return RedirectToPage("/Login");
+        }
+        catch (ApiUnauthorizedException)
+        {
+            HttpContext.Session.Clear();
+            TempData["Error"] = "Sua sessão expirou. Faça login novamente.";
+            return RedirectToPage("/Login");
+        }
         catch (Exception ex) { TempData["Error"] = ex.Message; }
         return RedirectToPage();
     }
