@@ -87,6 +87,9 @@ jobs:
           exit 1
       - name: Authenticate demo user and create an order through the API
         run: bash scripts/e2e-smoke.sh
+      - name: Collect container logs on failure
+        if: failure()
+        run: docker compose logs --no-color api db-init sqlserver
       - name: Stop containers
         if: always()
         run: docker compose down -v
