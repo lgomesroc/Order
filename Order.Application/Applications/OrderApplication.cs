@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Order.Application.DataContract.Request.Order;
 using Order.Application.Interfaces;
 using Order.Application.Mapper;
@@ -7,18 +8,26 @@ using OrderResponse = Order.Application.DataContract.Response.Order.OrderRespons
 
 namespace Order.Application.Applications;
 
-public class OrderApplication(IOrderService orderService) : IOrderApplication
+public class OrderApplication(IOrderService orderService, ILogger<OrderApplication> logger) : IOrderApplication
 {
     public async Task<Response> CreateAsync(CreateOrderRequest request)
     {
         try { return await orderService.CreateAsync(ApplicationMapper.ToModel(request)); }
-        catch (Exception ex) { return Response.Unprocessable(Report.Create(ex.Message)); }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Unexpected error while creating an order.");
+            return Response.Unprocessable(Report.Create("The order could not be created."));
+        }
     }
 
     public async Task<Response> UpdateAsync(UpdateOrderRequest request)
     {
         try { return await orderService.UpdateAsync(ApplicationMapper.ToModel(request)); }
-        catch (Exception ex) { return Response.Unprocessable(Report.Create(ex.Message)); }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Unexpected error while updating an order.");
+            return Response.Unprocessable(Report.Create("The order could not be updated."));
+        }
     }
 
     public Task<Response> DeleteAsync(string orderId) => orderService.DeleteAsync(orderId);
