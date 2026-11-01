@@ -94,3 +94,11 @@ As senhas dos usuários são armazenadas como hashes BCrypt. A chave JWT e a con
 ## Estado do projeto
 
 O projeto está em processo de recuperação e finalização da V1. As PRs de estabilização são mantidas abertas como rascunho até a compilação, os testes automatizados e a execução com SQL Server serem validados.
+
+
+## Validation strategy
+
+- Unit tests: `Order.Tests` (domain validation rules).
+- SQL Server integration tests: `Order.IntegrationTests` (repository persistence against SQL Server 2022).
+- CI: GitHub Actions restores and builds the complete .NET 10 solution, runs unit tests, and runs SQL Server integration tests in an ephemeral service container.
+- A release is considered ready only after CI passes and the API plus Razor Pages have been manually exercised end-to-end.
