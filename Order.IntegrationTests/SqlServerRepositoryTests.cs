@@ -15,8 +15,9 @@ public class SqlServerRepositoryTests
         Assert.False(string.IsNullOrWhiteSpace(connectionString), "ORDER_TEST_CONNECTION must point to the SQL Server test database.");
 
         await InitializeSchema(connectionString!);
+        var databaseConnection = new SqlConnectionStringBuilder(connectionString!) { InitialCatalog = "OrderDb" }.ConnectionString;
 
-        using var connector = new SqlConnector(connectionString!);
+        using var connector = new SqlConnector(databaseConnection);
         var clients = new ClientRepository(connector);
         var products = new ProductRepository(connector);
         var suffix = Guid.NewGuid().ToString("N");
