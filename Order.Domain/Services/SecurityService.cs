@@ -9,7 +9,9 @@ namespace Order.Domain.Services
     {
         public Task<Response<bool>> ComparePassword(string password, string confirmPassword)
         {
-            var isEquals = password.Trim().Equals(confirmPassword.Trim());
+            var isEquals = !string.IsNullOrWhiteSpace(password)
+                && !string.IsNullOrWhiteSpace(confirmPassword)
+                && string.Equals(password, confirmPassword, StringComparison.Ordinal);
 
             return Task.FromResult(Response.OK<bool>(isEquals));
         }
