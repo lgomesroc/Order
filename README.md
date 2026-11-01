@@ -89,7 +89,7 @@ Em outro terminal, inicie a interface web:
 dotnet run --project Order/Order.csproj
 ```
 
-Acesse a URL exibida pelo ASP.NET Core. A interface usa `OrderApi:BaseUrl` (padrão `http://localhost:5005/`). Para apontar para outro endereço, configure a variável `OrderApi__BaseUrl`. Cadastre um usuário pela API ou Swagger em `POST /api/user` e entre pela página `/Login`.
+Acesse a URL exibida pelo ASP.NET Core. A interface usa `OrderApi:BaseUrl` (padrão `http://localhost:5005/`). Para apontar para outro endereço, configure a variável `OrderApi__BaseUrl`. Crie uma conta pela página `/Register` (ou use `POST /api/user`) e entre pela página `/Login`.
 
 A interface Razor Pages permite cadastrar, consultar, atualizar e excluir clientes e produtos; pedidos podem ser criados, consultados, atualizados (substituindo os itens) e excluídos. A API protege esses recursos com JWT.
 
