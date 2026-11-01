@@ -5,7 +5,7 @@
 }
 <h1>Order</h1>
 <p class="lead">Gerenciamento de clientes, produtos e pedidos.</p>
-@if (Context.Session.GetString("Order.ApiToken") is null)
+@if (ViewContext.HttpContext.Session.GetString("Order.ApiToken") is null)
 {
     <p><a class="btn btn-primary" asp-page="/Login">Entrar</a></p>
 }
