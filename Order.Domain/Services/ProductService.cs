@@ -64,7 +64,9 @@ namespace Order.Domain.Services
 
             if (!exists)
             {
-                response.Report.Add(Report.Create($"product {productId} not exists!"));
+                var notFound = Report.Create($"product {productId} not exists!");
+                notFound.Code = "NOT_FOUND";
+                response.Report.Add(notFound);
                 return response;
             }
 
