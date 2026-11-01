@@ -30,32 +30,40 @@ Sistema de gerenciamento de clientes, produtos e pedidos, com API REST em ASP.NE
 - Docker Desktop ou Docker Engine com Docker Compose
 - SQL Server em execução (o Compose abaixo fornece um ambiente local)
 
-### 2. Preparar o SQL Server
+### 2. Subir a aplicação completa com Docker Compose
 
-Copie o arquivo de exemplo e defina uma senha local forte:
+Copie o arquivo de exemplo e configure os segredos locais:
 
 ```bash
 cp .env.example .env
 ```
 
-Edite `.env` e defina `MSSQL_SA_PASSWORD`. Não versione o arquivo `.env`.
+Edite `.env` com valores locais fortes. Não versione esse arquivo.
 
-Suba o banco:
-
-```bash
-docker compose up -d sqlserver
-```
-
-Aplique o esquema inicial:
+Suba SQL Server, inicialização automática do schema, API e interface Razor Pages:
 
 ```bash
-set -a
-source .env
-set +a
-docker exec -it order-sqlserver /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -i /scripts/schema.sql
+docker compose up --build
 ```
 
-O script cria o banco `OrderDb` e as tabelas de clientes, usuários, produtos, pedidos e itens de pedido.
+O serviço de inicialização aguarda o SQL Server ficar saudável e aplica o schema antes de iniciar a API. Não é necessário executar comandos SQL manualmente.
+
+- Interface web: [http://localhost:8080](http://localhost:8080)
+- API / Swagger: [http://localhost:5005/swagger](http://localhost:5005/swagger)
+- SQL Server: `localhost,1433`
+
+Para encerrar:
+
+```bash
+docker compose down
+```
+
+Para apagar também o volume local do banco (isso remove os dados):
+
+```bash
+docker compose down -v
+```
+
 
 ### 3. Configurar os segredos da API
 
