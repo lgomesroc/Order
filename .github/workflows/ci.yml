@@ -4,7 +4,6 @@ on:
   push:
     branches: [main, developer]
   pull_request:
-    branches: [main, developer]
   workflow_dispatch:
 
 permissions:
@@ -15,28 +14,21 @@ jobs:
     name: Build and unit tests (.NET 10)
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install .NET 10 SDK
-        uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
-
       - name: Restore
         run: dotnet restore Order.sln
-
       - name: Build
         run: dotnet build Order.sln --configuration Release --no-restore
-
-      - name: Run tests
-        run: dotnet test Order.sln --configuration Release --no-build --logger "trx;LogFileName=tests.trx"
-
+      - name: Run unit tests
+        run: dotnet test Order.sln --configuration Release --no-build --filter "Category!=Integration" --logger "trx;LogFileName=tests.trx"
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results
+          name: unit-test-results
           path: "**/TestResults/*.trx"
           if-no-files-found: ignore
 
@@ -53,17 +45,15 @@ jobs:
         ports:
           - 1433:1433
         options: >-
-          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Order_Test_Password_2026!' -C -Q 'SELECT 1' || exit 1"
+          --health-cmd "bash -c '</dev/tcp/127.0.0.1/1433'"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 15
     env:
       ORDER_TEST_CONNECTION: "Server=localhost,1433;Database=master;User Id=sa;Password=Order_Test_Password_2026!;TrustServerCertificate=True;Encrypt=False"
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      - name: Install .NET 10 SDK
-        uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
       - name: Restore
