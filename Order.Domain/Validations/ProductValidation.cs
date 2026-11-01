@@ -1,22 +1,16 @@
-﻿using FluentValidation;
+using FluentValidation;
 using Order.Domain.Models;
-
 namespace Order.Domain.Validations
 {
     public class ProductValidation : AbstractValidator<ProductModel>
     {
         public ProductValidation()
         {
-            ValidatorOptions.Global.CascadeMode = CascadeMode.Stop;
-
-            RuleFor(x => x.Description)
-                .NotNull()
-                .NotEmpty()
-                .Length(3, 30);
-
-            RuleFor(x => x.SellValue)
-                .NotEqual(0)
-                .NotEmpty();
+            ClassLevelCascadeMode = CascadeMode.Continue;
+            RuleLevelCascadeMode = CascadeMode.Stop;
+            RuleFor(x => x.Description).NotNull().NotEmpty().Length(3, 30);
+            RuleFor(x => x.SellValue).GreaterThan(0m).WithMessage("Sell value must be greater than zero.");
+            RuleFor(x => x.Stock).GreaterThanOrEqualTo(0);
         }
     }
 }
