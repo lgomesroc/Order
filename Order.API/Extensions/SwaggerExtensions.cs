@@ -1,4 +1,4 @@
-﻿using Microsoft.OpenApi.Models;
+using Microsoft.OpenApi.Models;
 
 namespace Order.Extensions
 {
@@ -11,27 +11,21 @@ namespace Order.Extensions
                 c.SwaggerDoc("v1", new OpenApiInfo
                 {
                     Version = "v1",
-                    Title = "ProgrameVC",
-                    Description = "API order",
-                    TermsOfService = new Uri("https://example.com/terms")
+                    Title = "Order",
+                    Description = "Order management API"
                 });
-
-                c.AddSecurityDefinition("oauth2", new OpenApiSecurityScheme()
+                c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
-                    Description = "Bearer token",
+                    Description = "JWT Authorization header using the Bearer scheme.",
                     In = ParameterLocation.Header,
                     Name = "Authorization",
-                    Type = SecuritySchemeType.ApiKey
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "bearer",
+                    BearerFormat = "JWT"
                 });
-
-                // Se SecurityRequirementsOperationFilter for uma classe comum, não é necessário registrar como serviço aqui.
-                // c.OperationFilter<SecurityRequirementsOperationFilter>();
-
-                var xmlApiPath = Path.Combine(AppContext.BaseDirectory, $"{typeof(IStartup).Assembly.GetName().Name}.xml");
-
-                c.IncludeXmlComments(xmlApiPath);
+                var xmlPath = Path.Combine(AppContext.BaseDirectory, "Order.Api.xml");
+                if (File.Exists(xmlPath)) c.IncludeXmlComments(xmlPath);
             });
         }
     }
 }
-
