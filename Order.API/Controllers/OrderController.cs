@@ -21,7 +21,10 @@ namespace Order.Controllers
         public async Task<IActionResult> GetById(string id)
         {
             var result = await _application.GetByIdAsync(id);
-            return result.Report.Any() ? NotFound(result.Report) : Ok(result.Data);
+            if (!result.Report.Any()) return Ok(result.Data);
+            return result.Report.Any(report => report.Code == "NOT_FOUND")
+                ? NotFound(result.Report)
+                : UnprocessableEntity(result.Report);
         }
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] CreateOrderRequest request)
@@ -34,13 +37,19 @@ namespace Order.Controllers
         {
             request.Id = id;
             var result = await _application.UpdateAsync(request);
-            return result.Report.Any() ? UnprocessableEntity(result.Report) : NoContent();
+            if (!result.Report.Any()) return NoContent();
+            return result.Report.Any(report => report.Code == "NOT_FOUND")
+                ? NotFound(result.Report)
+                : UnprocessableEntity(result.Report);
         }
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete(string id)
         {
             var result = await _application.DeleteAsync(id);
-            return result.Report.Any() ? NotFound(result.Report) : NoContent();
+            if (!result.Report.Any()) return NoContent();
+            return result.Report.Any(report => report.Code == "NOT_FOUND")
+                ? NotFound(result.Report)
+                : UnprocessableEntity(result.Report);
         }
     }
 }
