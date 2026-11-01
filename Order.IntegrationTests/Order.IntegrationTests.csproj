@@ -18,6 +18,6 @@
     <ProjectReference Include="..\Order.Infra\Order.Infra.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\scrip order.sql" Link="schema.sql" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="..\schema.sql" Link="schema.sql" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>
