@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Order.Application.DataContract.Request.User;
 using Order.Application.DataContract.Response.User;
 using Order.Application.Interfaces;
@@ -11,7 +12,8 @@ namespace Order.Application.Applications;
 public class UserApplication(
     IUserService userService,
     ISecurityService securityService,
-    ITokenManager tokenManager) : IUserApplication
+    ITokenManager tokenManager,
+    ILogger<UserApplication> logger) : IUserApplication
 {
     public async Task<Response<AuthResponse>> AuthAsync(AuthRequest auth)
     {
@@ -43,7 +45,8 @@ public class UserApplication(
         }
         catch (Exception ex)
         {
-            return Response.Unprocessable(Report.Create(ex.Message));
+            logger.LogError(ex, "Unexpected error while creating a user.");
+            return Response.Unprocessable(Report.Create("The user could not be created."));
         }
     }
 
@@ -58,7 +61,9 @@ public class UserApplication(
         }
         catch (Exception ex)
         {
-            return Response.Unprocessable<List<UserResponse>>(new List<Report> { Report.Create(ex.Message) });
+            logger.LogError(ex, "Unexpected error while listing users.");
+            return Response.Unprocessable<List<UserResponse>>(
+                new List<Report> { Report.Create("Users could not be retrieved.") });
         }
     }
 }
