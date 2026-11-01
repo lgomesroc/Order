@@ -25,7 +25,7 @@ services:
       MSSQL_SA_PASSWORD: ${MSSQL_SA_PASSWORD:?Configure MSSQL_SA_PASSWORD in .env}
       MSSQL_HOST: sqlserver
     volumes:
-      - ./scrip order.sql:/schema/schema.sql:ro
+      - ./schema.sql:/schema/schema.sql:ro
       - ./scripts/sql-init:/scripts:ro
     entrypoint: ["/bin/bash", "/scripts/init-schema.sh"]
     depends_on:
