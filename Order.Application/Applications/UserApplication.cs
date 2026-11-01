@@ -15,21 +15,42 @@ public class UserApplication(
 {
     public async Task<Response<AuthResponse>> AuthAsync(AuthRequest auth)
     {
-        var user = await userService.GetByLoginAsync(auth.Login);
-        if (user.Report.Any()) return Response.Unprocessable<AuthResponse>(user.Report);
+        var invalidCredentials = Response.Unprocessable<AuthResponse>(
+            new List<Report> { Report.Create("Login or password is invalid.") });
 
-        var authenticated = await userService.AutheticationAsync(auth.Password, user.Data);
-        if (!authenticated.Data)
-            return Response.Unprocessable<AuthResponse>(new List<Report> { Report.Create("Invalid password or login") });
+        if (auth is null || string.IsNullOrWhiteSpace(auth.Login) || string.IsNullOrWhiteSpace(auth.Password))
+            return invalidCredentials;
 
-        var token = await tokenManager.GenerateTokenAsync(user.Data);
-        return new Response<AuthResponse>(token);
+        try
+        {
+            var user = await userService.GetByLoginAsync(auth.Login.Trim());
+            if (user.Report.Any() || user.Data is null)
+                return invalidCredentials;
+
+            var authenticated = await userService.AutheticationAsync(auth.Password, user.Data);
+            if (authenticated.Report.Any() || !authenticated.Data)
+                return invalidCredentials;
+
+            var token = await tokenManager.GenerateTokenAsync(user.Data);
+            return new Response<AuthResponse>(token);
+        }
+        catch
+        {
+            return invalidCredentials;
+        }
     }
 
     public async Task<Response> CreateAsync(CreateUserRequest request)
     {
         try
         {
+            if (request is null || string.IsNullOrWhiteSpace(request.Login))
+                return Response.Unprocessable(Report.Create("Login is required."));
+
+            request.Login = request.Login.Trim();
+            if (string.IsNullOrWhiteSpace(request.Password) || request.Password.Length < 8)
+                return Response.Unprocessable(Report.Create("Password must contain at least 8 characters."));
+
             var passwordsMatch = await securityService.ComparePassword(request.Password, request.ConfirmPassword);
             if (!passwordsMatch.Data)
                 return Response.Unprocessable(Report.Create("Passwords do not match"));
@@ -43,7 +64,7 @@ public class UserApplication(
         }
         catch (Exception ex)
         {
-            return Response.Unprocessable(Report.Create(ex.Message));
+            return Response.Unprocessable(Report.Create("Unable to create account."));
         }
     }
 
