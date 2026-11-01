@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Logging;
 using Order.Application.DataContract.Request.Product;
 using Order.Application.DataContract.Response.Product;
 using Order.Application.Interfaces;
@@ -7,12 +8,16 @@ using Order.Domain.Validations.Base;
 
 namespace Order.Application.Applications;
 
-public class ProductApplication(IProductService productService) : IProductApplication
+public class ProductApplication(IProductService productService, ILogger<ProductApplication> logger) : IProductApplication
 {
     public async Task<Response> CreateAsync(CreateProductRequest request)
     {
         try { return await productService.CreateAsync(ApplicationMapper.ToModel(request)); }
-        catch (Exception ex) { return Response.Unprocessable(Report.Create(ex.Message)); }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Unexpected error while creating a product.");
+            return Response.Unprocessable(Report.Create("The product could not be created."));
+        }
     }
 
     public async Task<Response<ProductResponse>> GetByIdAsync(string productId)
