@@ -68,6 +68,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Configure local environment
         run: cp .env.example .env
+      - name: Enable Swagger for the CI smoke test
+        run: echo "Swagger__Enabled=true" >> "$GITHUB_ENV"
       - name: Validate Compose configuration
         run: docker compose config --quiet
       - name: Build and start the complete stack
