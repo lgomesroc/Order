@@ -201,14 +201,14 @@ namespace Order.Domain.Services
                     return false;
                 }
 
-                if (product.Stock < item.Quantity)
+                var stockReserved = await _unitOfWork.ProductRepository.TryDecreaseStockAsync(product.Id, item.Quantity);
+                if (!stockReserved)
                 {
                     response.Report.Add(Report.Create($"Insufficient stock for product {product.Id}."));
                     return false;
                 }
 
                 product.Stock -= item.Quantity;
-                await _unitOfWork.ProductRepository.UpdateAsync(product);
 
                 item.Product = product;
                 item.SellValue = product.SellValue;
