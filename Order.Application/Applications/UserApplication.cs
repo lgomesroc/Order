@@ -20,7 +20,7 @@ public class UserApplication(
 
         var authenticated = await userService.AutheticationAsync(auth.Password, user.Data);
         if (!authenticated.Data)
-            return Response.Unprocessable<AuthResponse>(Report.Create("Invalid password or login"));
+            return Response.Unprocessable<AuthResponse>(new List<Report> { Report.Create("Invalid password or login") });
 
         var token = await tokenManager.GenerateTokenAsync(user.Data);
         return new Response<AuthResponse>(token);
@@ -58,7 +58,7 @@ public class UserApplication(
         }
         catch (Exception ex)
         {
-            return Response.Unprocessable<List<UserResponse>>(Report.Create(ex.Message));
+            return Response.Unprocessable<List<UserResponse>>(new List<Report> { Report.Create(ex.Message) });
         }
     }
 }
