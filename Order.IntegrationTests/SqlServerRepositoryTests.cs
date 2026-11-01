@@ -25,7 +25,7 @@ public class SqlServerRepositoryTests
         var users = new UserRepository(connector);
         var orders = new OrderRepository(connector);
         var unitOfWork = new UnitOfWork(connector);
-        var orderService = new OrderService(new TimeProvider(), new Generators(), unitOfWork);
+        var orderService = new OrderService(new Order.Domain.Common.TimeProvider(), new Generators(), unitOfWork);
 
         var suffix = Guid.NewGuid().ToString("N");
         var clientId = suffix;
