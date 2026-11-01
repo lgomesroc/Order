@@ -68,7 +68,10 @@ app.UseSwaggerUI(options =>
 });
 if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
-app.UseHttpsRedirection();
+if (app.Configuration.GetValue<bool>("HttpsRedirection:Enabled"))
+{
+    app.UseHttpsRedirection();
+}
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
