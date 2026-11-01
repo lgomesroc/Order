@@ -30,7 +30,7 @@ namespace Order.Application.Security
 
             var securityToken = tokenHandler.CreateToken(new SecurityTokenDescriptor()
             {
-                Issuer = "programevc",
+                Issuer = _authSettings.Issuer,
                 IssuedAt = date,
                 NotBefore = date,
                 Expires = expire,
