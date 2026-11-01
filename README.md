@@ -1,6 +1,6 @@
 # Order
 
-Sistema de gerenciamento de clientes, produtos e pedidos, com API REST em ASP.NET Core, SQL Server e interface web planejada com Razor Pages.
+Sistema de gerenciamento de clientes, produtos e pedidos, com API REST em ASP.NET Core, SQL Server e interface web em Razor Pages integrada à API REST.
 
 ## Tecnologias
 
@@ -8,7 +8,7 @@ Sistema de gerenciamento de clientes, produtos e pedidos, com API REST em ASP.NE
 - C#
 - SQL Server
 - Dapper
-- AutoMapper
+- Mapeamento explícito de DTOs
 - JWT Bearer
 - Swagger / OpenAPI
 - Razor Pages
@@ -83,6 +83,16 @@ dotnet run --project Order.API/Order.csproj
 
 Swagger: [http://localhost:5005/swagger](http://localhost:5005/swagger).
 
+Em outro terminal, inicie a interface web:
+
+```bash
+dotnet run --project Order/Order.csproj
+```
+
+Acesse a URL exibida pelo ASP.NET Core. A interface usa `OrderApi:BaseUrl` (padrão `http://localhost:5005/`). Para apontar para outro endereço, configure a variável `OrderApi__BaseUrl`. Cadastre um usuário pela API ou Swagger em `POST /api/user` e entre pela página `/Login`.
+
+A interface Razor Pages permite cadastrar, consultar, atualizar e excluir clientes e produtos; pedidos podem ser criados, consultados, atualizados (substituindo os itens) e excluídos. A API protege esses recursos com JWT.
+
 ## Banco de dados
 
 O esquema inicial está em [scrip order.sql](scrip%20order.sql). Ele foi alinhado aos nomes de tabelas e tipos usados pelos repositórios. O banco local padrão é `OrderDb`.
@@ -93,7 +103,7 @@ As senhas dos usuários são armazenadas como hashes BCrypt. A chave JWT e a con
 
 ## Estado do projeto
 
-O projeto está em processo de recuperação e finalização da V1. As PRs de estabilização são mantidas abertas como rascunho até a compilação, os testes automatizados e a execução com SQL Server serem validados.
+A V1 está em validação. As PRs de estabilização permanecem como rascunho até a compilação, os testes automatizados e a execução ponta a ponta da API e da interface serem validados.
 
 
 ## Validation strategy
