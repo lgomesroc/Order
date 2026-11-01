@@ -30,36 +30,44 @@ Sistema de gerenciamento de clientes, produtos e pedidos, com API REST em ASP.NE
 - Docker Desktop ou Docker Engine com Docker Compose
 - SQL Server em execução (o Compose abaixo fornece um ambiente local)
 
-### 2. Preparar o SQL Server
+### 2. Subir a aplicação completa com Docker Compose
 
-Copie o arquivo de exemplo e defina uma senha local forte:
+Copie o arquivo de exemplo e configure os segredos locais:
 
 ```bash
 cp .env.example .env
 ```
 
-Edite `.env` e defina `MSSQL_SA_PASSWORD`. Não versione o arquivo `.env`.
+Edite `.env` com valores locais fortes. Não versione esse arquivo.
 
-Suba o banco:
-
-```bash
-docker compose up -d sqlserver
-```
-
-Aplique o esquema inicial:
+Suba SQL Server, inicialização automática do schema, API e interface Razor Pages:
 
 ```bash
-set -a
-source .env
-set +a
-docker exec -it order-sqlserver /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -i /scripts/schema.sql
+docker compose up --build
 ```
 
-O script cria o banco `OrderDb` e as tabelas de clientes, usuários, produtos, pedidos e itens de pedido.
+O serviço de inicialização aguarda o SQL Server ficar saudável e aplica o schema antes de iniciar a API. Não é necessário executar comandos SQL manualmente.
 
-### 3. Configurar os segredos da API
+- Interface web: [http://localhost:8080](http://localhost:8080)
+- API / Swagger: [http://localhost:5005/swagger](http://localhost:5005/swagger)
+- SQL Server: `localhost,1433`
 
-Os valores sensíveis são mantidos no .NET User Secrets durante o desenvolvimento, não no repositório:
+Para encerrar:
+
+```bash
+docker compose down
+```
+
+Para apagar também o volume local do banco (isso remove os dados):
+
+```bash
+docker compose down -v
+```
+
+
+### 3. Executar sem Docker (opcional)
+
+Se preferir executar os projetos diretamente com o SDK, configure SQL Server localmente e use User Secrets:
 
 ```bash
 set -a
@@ -67,31 +75,27 @@ source .env
 set +a
 
 dotnet user-secrets set "ConnectionStrings:default" "Server=localhost,1433;Database=OrderDb;User Id=sa;Password=$MSSQL_SA_PASSWORD;TrustServerCertificate=True;Encrypt=False" --project Order.API/Order.csproj
-
-dotnet user-secrets set "AuthSettings:Secret" "Order-Development-Only-Signing-Key-2026-Do-Not-Reuse" --project Order.API/Order.csproj
+dotnet user-secrets set "AuthSettings:Secret" "$AUTH_JWT_SECRET" --project Order.API/Order.csproj
+dotnet user-secrets set "AuthSettings:Issuer" "Order.Api" --project Order.API/Order.csproj
 ```
 
-Em ambientes publicados, configure `ConnectionStrings__default` e `AuthSettings__Secret` como variáveis de ambiente/segredos do provedor.
+Aplique o schema manualmente apenas nesse modo alternativo, caso seu SQL Server ainda não tenha sido inicializado. No fluxo Docker Compose, schema e dados de demonstração são preparados automaticamente.
 
-### 4. Restaurar, compilar e executar
+Compile a solução:
 
 ```bash
 dotnet restore Order.sln
 dotnet build Order.sln --no-restore
-dotnet run --project Order.API/Order.csproj
 ```
 
-Swagger: [http://localhost:5005/swagger](http://localhost:5005/swagger).
-
-Em outro terminal, inicie a interface web:
+Inicie a API e a interface em terminais separados:
 
 ```bash
+dotnet run --project Order.API/Order.csproj
 dotnet run --project Order/Order.csproj
 ```
 
-Acesse a URL exibida pelo ASP.NET Core. A interface usa `OrderApi:BaseUrl` (padrão `http://localhost:5005/`). Para apontar para outro endereço, configure a variável `OrderApi__BaseUrl`. Crie uma conta pela página `/Register` (ou use `POST /api/user`) e entre pela página `/Login`.
-
-A interface Razor Pages permite cadastrar, consultar, atualizar e excluir clientes e produtos; pedidos podem ser criados, consultados, atualizados (substituindo os itens) e excluídos. A API protege esses recursos com JWT.
+A interface usa `OrderApi:BaseUrl` (padrão `http://localhost:5005/`). Crie uma conta pela página `/Register` ou use o usuário de demonstração carregado no ambiente Docker.
 
 ## Banco de dados
 
