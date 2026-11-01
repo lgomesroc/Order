@@ -5,22 +5,19 @@ API_URL="${API_URL:-http://localhost:5005}"
 LOGIN="${DEMO_LOGIN:-demo}"
 PASSWORD="${DEMO_PASSWORD:-OrderDemo#2026!}"
 
-login_response=""
-for attempt in $(seq 1 36); do
-    if login_response="$(curl --fail --silent --show-error \
-        -H 'Content-Type: application/json' \
-        -d "$(jq -nc --arg login "$LOGIN" --arg password "$PASSWORD" '{login:$login,password:$password}')" \
-        "$API_URL/api/user/auth" 2>/dev/null)"; then
-        break
-    fi
-    sleep 5
-done
+login_status="$(curl --silent --show-error --max-time 15 \
+    --output /tmp/order-auth-response.json --write-out '%{http_code}' \
+    -H 'Content-Type: application/json' \
+    -d "$(jq -nc --arg login "$LOGIN" --arg password "$PASSWORD" '{login:$login,password:$password}')" \
+    "$API_URL/api/user/auth")"
 
-if [[ -z "$login_response" ]]; then
-    echo "Demo user authentication failed; API did not accept the login request." >&2
+if [[ "$login_status" != "200" ]]; then
+    echo "Demo user authentication failed with HTTP $login_status:" >&2
+    cat /tmp/order-auth-response.json >&2
     exit 1
 fi
 
+login_response="$(cat /tmp/order-auth-response.json)"
 token="$(jq -r '.token // .Token // empty' <<< "$login_response")"
 if [[ -z "$token" ]]; then
     echo "Authentication response did not contain a JWT token." >&2
@@ -40,7 +37,7 @@ order_payload='{
   ]
 }'
 
-status="$(curl --silent --show-error --output /tmp/order-response.json --write-out '%{http_code}' \
+status="$(curl --silent --show-error --max-time 20 --output /tmp/order-response.json --write-out '%{http_code}' \
     -X POST "$API_URL/api/order" \
     -H 'Content-Type: application/json' \
     -H "Authorization: Bearer $token" \
