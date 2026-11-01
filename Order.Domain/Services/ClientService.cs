@@ -47,7 +47,9 @@ namespace Order.Domain.Services
 
             if (!exists)
             {
-                response.Report.Add(Report.Create($"Client {clientId} not exists!"));
+                var notFound = Report.Create($"Client {clientId} not exists!");
+                notFound.Code = "NOT_FOUND";
+                response.Report.Add(notFound);
                 return response;
             }
 
@@ -108,7 +110,9 @@ namespace Order.Domain.Services
 
             if (!exists)
             {
-                response.Report.Add(Report.Create($"Client {client.Id} not exists!"));
+                var notFound = Report.Create($"Client {client.Id} not exists!");
+                notFound.Code = "NOT_FOUND";
+                response.Report.Add(notFound);
                 return response;
             }
 
