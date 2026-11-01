@@ -226,11 +226,7 @@ namespace Order.Domain.Services
             foreach (var item in items)
             {
                 if (item.Product == null || string.IsNullOrWhiteSpace(item.Product.Id)) continue;
-                var product = await _unitOfWork.ProductRepository.GetByIdAsync(item.Product.Id);
-                if (product == null) continue;
-
-                product.Stock += item.Quantity;
-                await _unitOfWork.ProductRepository.UpdateAsync(product);
+                await _unitOfWork.ProductRepository.IncreaseStockAsync(item.Product.Id, item.Quantity);
             }
         }
     }
