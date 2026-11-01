@@ -1,1 +1,4 @@
 .vs/
+.env
+.env.*
+!.env.example

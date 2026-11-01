@@ -1,101 +1,80 @@
-USE [PVC]
+IF DB_ID(N'OrderDb') IS NULL
+BEGIN
+    CREATE DATABASE [OrderDb];
+END
 GO
 
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[Client](
-	[Id] [varchar](32) NOT NULL,
-	[Name] [varchar](100) NOT NULL,
-	[Email] [varchar](100) NULL,
-	[PhoneNumber] [varchar](14) NULL,
-	[Address] [varchar](200) NULL,
-	[CreatedAt] [datetime2](7) NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[Id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
+USE [OrderDb];
 GO
 
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[Order1](
-	[Id] [varchar](32) NOT NULL,
-	[ClientId] [varchar](32) NOT NULL,
-	[UserId] [varchar](32) NOT NULL,
-	[CreatedAt] [datetime2](7) NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[Id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
+IF OBJECT_ID(N'dbo.Client', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[Client]
+    (
+        [Id] VARCHAR(32) NOT NULL PRIMARY KEY,
+        [Name] VARCHAR(100) NOT NULL,
+        [Email] VARCHAR(100) NULL,
+        [PhoneNumber] VARCHAR(20) NULL,
+        [Address] VARCHAR(200) NULL,
+        [CreatedAt] DATETIME2(7) NOT NULL
+    );
+END
 GO
 
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[OrderItem](
-	[Id] [varchar](32) NOT NULL,
-	[OrderId] [varchar](32) NOT NULL,
-	[ProductId] [varchar](32) NOT NULL,
-	[SellValue] [numeric](8, 2) NULL,
-	[Quantity] [numeric](18, 0) NULL,
-	[TotalAmount] [numeric](8, 2) NULL,
-	[CreatedAt] [datetime2](7) NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[Id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY]
+IF OBJECT_ID(N'dbo.[User]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[User]
+    (
+        [Id] VARCHAR(32) NOT NULL PRIMARY KEY,
+        [Name] VARCHAR(100) NOT NULL,
+        [Login] VARCHAR(50) NOT NULL UNIQUE,
+        [PasswordHash] VARCHAR(255) NOT NULL,
+        [CreatedAt] DATETIME2(7) NOT NULL
+    );
+END
 GO
 
-SET ANSI_NULLS ON
-GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[Product](
-	[Id] [varchar](32) NOT NULL,
-	[Description] [varchar](100) NOT NULL,
-	[SellValue] [numeric](8, 2) NOT NULL,
-	[Stock] [varchar](max) NULL,
-	[CreatedAt] [datetime2](7) NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[Id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+IF OBJECT_ID(N'dbo.Product', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[Product]
+    (
+        [Id] VARCHAR(32) NOT NULL PRIMARY KEY,
+        [Description] VARCHAR(100) NOT NULL,
+        [SellValue] DECIMAL(18, 2) NOT NULL,
+        [Stock] INT NOT NULL CONSTRAINT [DF_Product_Stock] DEFAULT (0),
+        [CreatedAt] DATETIME2(7) NOT NULL
+    );
+END
 GO
 
-SET ANSI_NULLS ON
+IF OBJECT_ID(N'dbo.[Order]', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[Order]
+    (
+        [Id] VARCHAR(32) NOT NULL PRIMARY KEY,
+        [ClientId] VARCHAR(32) NOT NULL,
+        [UserId] VARCHAR(32) NOT NULL,
+        [CreatedAt] DATETIME2(7) NOT NULL,
+        CONSTRAINT [FK_Order_Client] FOREIGN KEY ([ClientId]) REFERENCES [dbo].[Client]([Id]),
+        CONSTRAINT [FK_Order_User] FOREIGN KEY ([UserId]) REFERENCES [dbo].[User]([Id])
+    );
+END
 GO
-SET QUOTED_IDENTIFIER ON
-GO
-CREATE TABLE [dbo].[User1](
-	[Id] [varchar](32) NOT NULL,
-	[Name] [varchar](100) NOT NULL,
-	[Login] [varchar](20) NOT NULL,
-	[PasswordHash] [varchar](max) NULL,
-	[CreatedAt] [datetime2](7) NULL,
-PRIMARY KEY CLUSTERED 
-(
-	[Id] ASC
-)WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
-) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
-GO
-ALTER TABLE [dbo].[Order1]  WITH CHECK ADD FOREIGN KEY([ClientId])
-REFERENCES [dbo].[Client] ([Id])
-GO
-ALTER TABLE [dbo].[Order1]  WITH CHECK ADD FOREIGN KEY([UserId])
-REFERENCES [dbo].[User1] ([Id])
-GO
-ALTER TABLE [dbo].[OrderItem]  WITH CHECK ADD FOREIGN KEY([OrderId])
-REFERENCES [dbo].[Order1] ([Id])
-GO
-ALTER TABLE [dbo].[OrderItem]  WITH CHECK ADD FOREIGN KEY([ProductId])
-REFERENCES [dbo].[Product] ([Id])
+
+IF OBJECT_ID(N'dbo.OrderItem', N'U') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[OrderItem]
+    (
+        [Id] VARCHAR(32) NOT NULL PRIMARY KEY,
+        [OrderId] VARCHAR(32) NOT NULL,
+        [ProductId] VARCHAR(32) NOT NULL,
+        [SellValue] DECIMAL(18, 2) NOT NULL,
+        [Quantity] INT NOT NULL,
+        [TotalAmount] DECIMAL(18, 2) NOT NULL,
+        [CreatedAt] DATETIME2(7) NOT NULL,
+        CONSTRAINT [FK_OrderItem_Order] FOREIGN KEY ([OrderId]) REFERENCES [dbo].[Order]([Id]),
+        CONSTRAINT [FK_OrderItem_Product] FOREIGN KEY ([ProductId]) REFERENCES [dbo].[Product]([Id]),
+        CONSTRAINT [CK_OrderItem_Quantity] CHECK ([Quantity] > 0)
+    );
+END
 GO

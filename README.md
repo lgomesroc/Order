@@ -1,66 +1,114 @@
-# Order API
+# Order
 
-![Venha conhecer o projeto Order.](cl3oal8w6000c79570tgf4k1k.jpg)
+Sistema de gerenciamento de clientes, produtos e pedidos, com API REST em ASP.NET Core, SQL Server e interface web em Razor Pages integrada à API REST.
 
-Este projeto é uma API avançada desenvolvida utilizando diversas ferramentas e boas práticas de programação. Ele envolve conceitos como injeção de dependência, generics, JWT, UnitOfWork, Docker, AutoMapper, Dapper, REST, Swagger, Bryct, entre outros.
+## Tecnologias
+
+- .NET 10 / ASP.NET Core
+- C#
+- SQL Server
+- Dapper
+- Mapeamento explícito de DTOs
+- JWT Bearer
+- Swagger / OpenAPI
+- Razor Pages
+- Docker
+
+## Estrutura
+
+- `Order.API`: API REST e composição da aplicação.
+- `Order.Application`: casos de uso, contratos de entrada/saída e mapeamentos.
+- `Order.Domain`: entidades, regras de negócio, validações e interfaces.
+- `Order.Infra`: persistência SQL Server e repositórios.
+- `Order`: aplicação web Razor Pages.
+
+## Configuração local
+
+### 1. Pré-requisitos
+
+- .NET SDK 10
+- Docker Desktop ou Docker Engine com Docker Compose
+- SQL Server em execução (o Compose abaixo fornece um ambiente local)
+
+### 2. Preparar o SQL Server
+
+Copie o arquivo de exemplo e defina uma senha local forte:
+
+```bash
+cp .env.example .env
+```
+
+Edite `.env` e defina `MSSQL_SA_PASSWORD`. Não versione o arquivo `.env`.
+
+Suba o banco:
+
+```bash
+docker compose up -d sqlserver
+```
+
+Aplique o esquema inicial:
+
+```bash
+set -a
+source .env
+set +a
+docker exec -it order-sqlserver /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -i /scripts/schema.sql
+```
+
+O script cria o banco `OrderDb` e as tabelas de clientes, usuários, produtos, pedidos e itens de pedido.
+
+### 3. Configurar os segredos da API
+
+Os valores sensíveis são mantidos no .NET User Secrets durante o desenvolvimento, não no repositório:
+
+```bash
+set -a
+source .env
+set +a
+
+dotnet user-secrets set "ConnectionStrings:default" "Server=localhost,1433;Database=OrderDb;User Id=sa;Password=$MSSQL_SA_PASSWORD;TrustServerCertificate=True;Encrypt=False" --project Order.API/Order.csproj
+
+dotnet user-secrets set "AuthSettings:Secret" "Order-Development-Only-Signing-Key-2026-Do-Not-Reuse" --project Order.API/Order.csproj
+```
+
+Em ambientes publicados, configure `ConnectionStrings__default` e `AuthSettings__Secret` como variáveis de ambiente/segredos do provedor.
+
+### 4. Restaurar, compilar e executar
+
+```bash
+dotnet restore Order.sln
+dotnet build Order.sln --no-restore
+dotnet run --project Order.API/Order.csproj
+```
+
+Swagger: [http://localhost:5005/swagger](http://localhost:5005/swagger).
+
+Em outro terminal, inicie a interface web:
+
+```bash
+dotnet run --project Order/Order.csproj
+```
+
+Acesse a URL exibida pelo ASP.NET Core. A interface usa `OrderApi:BaseUrl` (padrão `http://localhost:5005/`). Para apontar para outro endereço, configure a variável `OrderApi__BaseUrl`. Crie uma conta pela página `/Register` (ou use `POST /api/user`) e entre pela página `/Login`.
+
+A interface Razor Pages permite cadastrar, consultar, atualizar e excluir clientes e produtos; pedidos podem ser criados, consultados, atualizados (substituindo os itens) e excluídos. A API protege esses recursos com JWT.
+
+## Banco de dados
+
+O esquema inicial está em [scrip order.sql](scrip%20order.sql). Ele foi alinhado aos nomes de tabelas e tipos usados pelos repositórios. O banco local padrão é `OrderDb`.
+
+## Segurança
+
+As senhas dos usuários são armazenadas como hashes BCrypt. A chave JWT e a connection string não devem ser commitadas; use User Secrets localmente e o gerenciador de segredos do ambiente publicado.
+
+## Estado do projeto
+
+A V1 está em validação. As PRs de estabilização permanecem como rascunho até a compilação, os testes automatizados e a execução ponta a ponta da API e da interface serem validados.
 
 
-## Funcionalidades Principais
+## Validation strategy
 
-O objetivo principal do projeto é lidar com a venda de produtos, incluindo o cadastro de clientes. O banco de dados foi estruturado no SQL Server Management Studio com as seguintes tabelas:
-
-- Usuário: Para autenticação e acesso à API.
-- Produto: Informações sobre os produtos disponíveis.
-- Cliente: Cadastro de clientes.
-- Pedido: Informações sobre os pedidos realizados.
-- PedidoItem: Detalhes dos itens em cada pedido.
-
-### Segurança
-
-As senhas são criptografadas e não são armazenadas no banco de dados por questões de segurança.
-
-
-## Estrutura do Projeto
-
-O projeto está dividido em quatro partes interligadas:
-
-- **Order.API:** Inicialização da aplicação e ponto de entrada da API.
-- **Order.Domain:** Camada de domínio.
-- **Order.Application:** Camada de aplicação, responsável por fornecer e receber dados da API.
-- **Order.Infra:** Camada de infraestrutura, cuida do acesso ao banco de dados e interações externas.
-
-### Nomenclatura
-
-Todos os componentes, incluindo nomes de classes, projetos, tabelas e propriedades, foram nomeados em inglês, seguindo as melhores práticas de programação.
-
-
-## Feedback
-
-Sinta-se à vontade para explorar e dar feedback através de elogios, sugestões e críticas.
-
-
-## Como Contribuir
-
-Se você deseja contribuir para o desenvolvimento deste projeto, siga as etapas abaixo:
-
-### Relatando Problemas
-
-Se encontrar algum problema ou tiver sugestões de melhorias, por favor, abra uma "Issue". Antes de criar uma nova "Issue", verifique se o problema já não foi relatado por outra pessoa.
-
-### Contribuindo com Código
-
-Se você deseja contribuir com código, siga estas etapas:
-
-1. Fork do repositório.
-2. Crie uma nova branch para suas alterações: `git checkout -b nome-da-sua-branch`.
-3. Faça as alterações desejadas e faça commit: `git commit -m "Descrição das alterações"`.
-4. Faça push para a sua branch: `git push origin nome-da-sua-branch`.
-5. Abra um Pull Request (PR) com uma descrição clara das alterações propostas.
-
-Agradeço antecipadamente por suas contribuições!
-
-## Estrelas
-
-Peço encarecidamente, se puder, dar estrela para que o projeto fique em destaque e mostre as outras pessoas.
-
-  
+- Unit tests: `Order.Tests` (domain validation rules).
+- SQL Server integration tests: `Order.IntegrationTests` (repository persistence against SQL Server 2022).
+- CI: GitHub Actions restores and builds the complete .NET 10 solution, runs unit tests, and runs SQL Server integration tests in an ephemeral service container.
+- A release is considered ready only after CI passes and the API plus Razor Pages have been manually exercised end-to-end.
