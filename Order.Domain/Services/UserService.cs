@@ -40,6 +40,12 @@ namespace Order.Domain.Services
             if (errors.Report.Count > 0)
                 return errors;
 
+            if (await _UserRepository.ExistsByLoginAsync(user.Login))
+            {
+                response.Report.Add(Report.Create("Login already in use"));
+                return response;
+            }
+
             user.Id = _generators.Generate();
             user.CreatedAt = _timeProvider.utcDateTime();
 

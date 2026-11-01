@@ -13,10 +13,13 @@ public class UserApplication(
     ISecurityService securityService,
     ITokenManager tokenManager) : IUserApplication
 {
+    private const int MinPasswordLength = 8;
+
     public async Task<Response<AuthResponse>> AuthAsync(AuthRequest auth)
     {
         var user = await userService.GetByLoginAsync(auth.Login);
-        if (user.Report.Any()) return Response.Unprocessable<AuthResponse>(user.Report);
+        if (user.Report.Any())
+            return Response.Unprocessable<AuthResponse>(new List<Report> { Report.Create("Invalid password or login") });
 
         var authenticated = await userService.AutheticationAsync(auth.Password, user.Data);
         if (!authenticated.Data)
@@ -30,6 +33,9 @@ public class UserApplication(
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(request.Password) || request.Password.Trim().Length < MinPasswordLength)
+                return Response.Unprocessable(Report.Create($"Password must have at least {MinPasswordLength} characters"));
+
             var passwordsMatch = await securityService.ComparePassword(request.Password, request.ConfirmPassword);
             if (!passwordsMatch.Data)
                 return Response.Unprocessable(Report.Create("Passwords do not match"));
