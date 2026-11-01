@@ -88,6 +88,34 @@ namespace Order.Infra.Repositories
             return Products.ToList();
         }
 
+        public async Task<bool> TryDecreaseStockAsync(string productId, int quantity)
+        {
+            const string sql = @"UPDATE [dbo].[Product]
+                                 SET [Stock] = [Stock] - @Quantity
+                                 WHERE [Id] = @ProductId AND [Stock] >= @Quantity";
+
+            var affectedRows = await _dbConnector.DbConnection.ExecuteAsync(sql, new
+            {
+                ProductId = productId,
+                Quantity = quantity
+            }, _dbConnector.DbTransaction);
+
+            return affectedRows == 1;
+        }
+
+        public async Task IncreaseStockAsync(string productId, int quantity)
+        {
+            const string sql = @"UPDATE [dbo].[Product]
+                                 SET [Stock] = [Stock] + @Quantity
+                                 WHERE [Id] = @ProductId";
+
+            await _dbConnector.DbConnection.ExecuteAsync(sql, new
+            {
+                ProductId = productId,
+                Quantity = quantity
+            }, _dbConnector.DbTransaction);
+        }
+
         public async Task UpdateAsync(ProductModel Product)
         {
             string sql = @"UPDATE [dbo].[Product]

@@ -135,6 +135,66 @@ public class SqlServerRepositoryTests
         }
     }
 
+
+    [Fact]
+    public async Task ProductRepository_ConcurrentReservations_DoNotOversellStock()
+    {
+        var connectionString = Environment.GetEnvironmentVariable("ORDER_TEST_CONNECTION");
+        Assert.False(string.IsNullOrWhiteSpace(connectionString), "ORDER_TEST_CONNECTION must point to the SQL Server test database.");
+
+        await InitializeSchema(connectionString!);
+        var databaseConnection = new SqlConnectionStringBuilder(connectionString!) { InitialCatalog = "OrderDb" }.ConnectionString;
+        var productId = Guid.NewGuid().ToString("N");
+
+        try
+        {
+            using (var setupConnector = new SqlConnector(databaseConnection))
+            {
+                await new ProductRepository(setupConnector).CreateAsync(new ProductModel
+                {
+                    Id = productId,
+                    Description = "Concurrent reservation test",
+                    SellValue = 10m,
+                    Stock = 5,
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+
+            using var firstConnector = new SqlConnector(databaseConnection);
+            using var secondConnector = new SqlConnector(databaseConnection);
+            var firstRepository = new ProductRepository(firstConnector);
+            var secondRepository = new ProductRepository(secondConnector);
+
+            var reservations = await Task.WhenAll(
+                firstRepository.TryDecreaseStockAsync(productId, 4),
+                secondRepository.TryDecreaseStockAsync(productId, 4));
+
+            Assert.Single(reservations, reserved => reserved);
+            Assert.Single(reservations, reserved => !reserved);
+
+            using var verificationConnector = new SqlConnector(databaseConnection);
+            var finalProduct = await new ProductRepository(verificationConnector).GetByIdAsync(productId);
+            Assert.NotNull(finalProduct);
+            Assert.Equal(1, finalProduct.Stock);
+
+            using var restoreConnectorOne = new SqlConnector(databaseConnection);
+            using var restoreConnectorTwo = new SqlConnector(databaseConnection);
+            await Task.WhenAll(
+                new ProductRepository(restoreConnectorOne).IncreaseStockAsync(productId, 2),
+                new ProductRepository(restoreConnectorTwo).IncreaseStockAsync(productId, 2));
+
+            using var restoredVerificationConnector = new SqlConnector(databaseConnection);
+            var restoredProduct = await new ProductRepository(restoredVerificationConnector).GetByIdAsync(productId);
+            Assert.NotNull(restoredProduct);
+            Assert.Equal(5, restoredProduct.Stock);
+        }
+        finally
+        {
+            using var cleanupConnector = new SqlConnector(databaseConnection);
+            await new ProductRepository(cleanupConnector).DeleteAsync(productId);
+        }
+    }
+
     private static async Task InitializeSchema(string connectionString)
     {
         var scriptPath = Path.Combine(AppContext.BaseDirectory, "schema.sql");

@@ -201,14 +201,14 @@ namespace Order.Domain.Services
                     return false;
                 }
 
-                if (product.Stock < item.Quantity)
+                var stockReserved = await _unitOfWork.ProductRepository.TryDecreaseStockAsync(product.Id, item.Quantity);
+                if (!stockReserved)
                 {
                     response.Report.Add(Report.Create($"Insufficient stock for product {product.Id}."));
                     return false;
                 }
 
                 product.Stock -= item.Quantity;
-                await _unitOfWork.ProductRepository.UpdateAsync(product);
 
                 item.Product = product;
                 item.SellValue = product.SellValue;
@@ -226,11 +226,7 @@ namespace Order.Domain.Services
             foreach (var item in items)
             {
                 if (item.Product == null || string.IsNullOrWhiteSpace(item.Product.Id)) continue;
-                var product = await _unitOfWork.ProductRepository.GetByIdAsync(item.Product.Id);
-                if (product == null) continue;
-
-                product.Stock += item.Quantity;
-                await _unitOfWork.ProductRepository.UpdateAsync(product);
+                await _unitOfWork.ProductRepository.IncreaseStockAsync(item.Product.Id, item.Quantity);
             }
         }
     }

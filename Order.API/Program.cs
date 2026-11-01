@@ -60,12 +60,15 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 builder.Services.AddAuthorization();
 
 var app = builder.Build();
-app.UseSwagger();
-app.UseSwaggerUI(options =>
+if (app.Configuration.GetValue<bool>("Swagger:Enabled"))
 {
-    options.RoutePrefix = "swagger";
-    options.SwaggerEndpoint("/swagger/v1/swagger.json", "Order API v1");
-});
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.RoutePrefix = "swagger";
+        options.SwaggerEndpoint("/swagger/v1/swagger.json", "Order API v1");
+    });
+}
 if (app.Environment.IsDevelopment())
     app.UseDeveloperExceptionPage();
 app.UseHttpsRedirection();
