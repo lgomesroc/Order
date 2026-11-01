@@ -140,7 +140,9 @@ namespace Order.Domain.Services
                 if (data == null)
                 {
                     _unitOfWork.RollbackTransaction();
-                    response.Report.Add(Report.Create($"Order {orderId} does not exist."));
+                    var notFound = Report.Create($"Order {orderId} does not exist.");
+                    notFound.Code = "NOT_FOUND";
+                    response.Report.Add(notFound);
                     return response;
                 }
 
